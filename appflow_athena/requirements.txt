@@ -1,0 +1,1 @@
+aws_ddk_core==0.2.1
