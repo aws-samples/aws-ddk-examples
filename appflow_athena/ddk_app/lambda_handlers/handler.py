@@ -11,12 +11,11 @@ events_client = boto3.client("events")
 
 
 def lambda_handler(event, context):
-    print(event)
     for record in event["Records"]:
         payload = json.loads(record["body"])
 
-        bucket_name = payload["detail"]["requestParameters"]["bucketName"]
-        object_key = payload["detail"]["requestParameters"]["key"]
+        bucket_name = payload["detail"]["bucket"]["name"]
+        object_key = payload["detail"]["object"]["key"]
 
         raw_object = s3_client.get_object(Bucket=bucket_name, Key=object_key)
         raw_data = json.loads(raw_object["Body"].read().decode("utf-8"))

@@ -48,7 +48,7 @@ class DdkApplicationStack(BaseStack):
             self,
             id="s3-event-stage",
             environment_id=environment_id,
-            event_names=["CopyObject", "PutObject", "CompleteMultipartUpload"],
+            event_names=["Object Created"],
             bucket_name=bucket.bucket_name,
             key_prefix="ga-data",
         )
@@ -103,7 +103,7 @@ class DdkApplicationStack(BaseStack):
                     self,
                     "schedule-rule",
                     enabled=True,
-                    schedule=Schedule.rate(Duration.minutes(2)),
+                    schedule=Schedule.rate(Duration.minutes(1)),
                     targets=appflow_stage.get_targets(),
                 ),
             )
