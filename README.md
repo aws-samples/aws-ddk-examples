@@ -21,7 +21,7 @@ This repo contains examples of DDK data stages used in data pipelines. You can f
 
 | Examples |
 |----------|
-| [Placeholder](https://github.com/aws-samples/aws-ddk-examples/tree/main/placeholder) |
+| [Appflow/Athena](https://github.com/aws-samples/aws-ddk-examples/tree/main/appflow_athena) |
 
 
 ## Learning Resources <a name="Learning"></a>
