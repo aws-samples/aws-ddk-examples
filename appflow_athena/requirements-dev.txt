@@ -1,0 +1,2 @@
+pytest==6.2.5
+awswrangler==2.15.0
