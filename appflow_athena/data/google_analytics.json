@@ -1,0 +1,55 @@
+{
+  "reports": [
+    {
+      "columnHeader": {
+        "dimensions": [
+          "ga:dateHour",
+          "ga:deviceCategory"
+        ],
+        "metricHeader": {
+          "metricHeaderEntries": [
+            {
+              "name": "ga:users",
+              "type": "INTEGER"
+            }
+          ]
+        }
+      },
+      "data": {
+        "totals": [
+          {
+            "values": [
+              "0"
+            ]
+          }
+        ],
+        "rows": [
+        	{
+        		"dimensions": ["2022010100", "desktop"],
+            "metrics": [
+                {
+                  "values": ["1"]
+                }
+              ]
+        	},
+          {
+            "dimensions": ["2022010101", "mobile"],
+            "metrics": [
+                {
+                  "values": ["2"]
+                }
+              ]
+          },
+          {
+            "dimensions": ["2022010102", "desktop"],
+            "metrics": [
+                {
+                  "values": ["3"]
+                }
+              ]
+          }
+        ]
+      }
+    }
+  ]
+}
