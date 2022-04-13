@@ -42,13 +42,10 @@ def lambda_handler(event, context):
             }
         )
 
-        output_file_name = dt.now().strftime("%Y%m%d%H%M%S")
-        output_key = f"ga-sample/{output_file_name}.parquet"
-
         # Write parquet file to S3 and create metadata table
-        wr.s3.to_parquet(
+        result = wr.s3.to_parquet(
             df,
-            f"s3://{bucket_name}/{output_key}",
+            f"s3://{bucket_name}/ga-sample/",
             dataset=True,
             database="appflow_data",
             table="ga_sample",
@@ -60,7 +57,7 @@ def lambda_handler(event, context):
                 {
                     "Source": os.environ["EVENT_SOURCE"],
                     "DetailType": os.environ["EVENT_DETAIL_TYPE"],
-                    "Detail": json.dumps({"bucket": bucket_name, "key": output_key}),
+                    "Detail": json.dumps(result),
                     "Resources": [],
                 }
             ]
