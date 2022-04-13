@@ -2,9 +2,9 @@ from typing import Any
 
 from aws_cdk import Duration
 from aws_cdk.aws_appflow import CfnFlow
-from aws_cdk.aws_events import Rule, Schedule
+from aws_cdk.aws_events import EventPattern, Rule, Schedule
 from aws_cdk.aws_glue_alpha import Database
-from aws_cdk.aws_iam import Effect, PolicyStatement, Role, ServicePrincipal
+from aws_cdk.aws_iam import Effect, PolicyStatement, ServicePrincipal
 from aws_cdk.aws_lambda import Code, LayerVersion
 from aws_cdk.aws_s3 import Bucket, BucketAccessControl
 from aws_ddk_core.base import BaseStack
@@ -13,7 +13,6 @@ from aws_ddk_core.resources import S3Factory
 from aws_ddk_core.stages import (
     AppFlowIngestionStage,
     AthenaSQLStage,
-    S3EventStage,
     SqsToLambdaStage,
 )
 from constructs import Construct
@@ -32,10 +31,9 @@ class DdkApplicationStack(BaseStack):
         database = self._create_database(database_name="appflow_data")
 
         # Create Google Analytics AppFlow flow
-        flow_name = "ga-flow"
         flow = self._create_ga_s3_ingest_flow(
             connector_profile_name="ga-connection",
-            flow_name=flow_name,
+            flow_name="ga-flow",
             google_analytics_object="264236892",
             bucket_name=bucket.bucket_name,
             bucket_prefix="ga-data",
@@ -46,15 +44,7 @@ class DdkApplicationStack(BaseStack):
             self,
             id="appflow-stage",
             environment_id=environment_id,
-            flow_name=flow_name,
-        )
-        s3_event_stage = S3EventStage(
-            self,
-            id="s3-event-stage",
-            environment_id=environment_id,
-            event_names=["Object Created"],
-            bucket_name=bucket.bucket_name,
-            key_prefix="ga-data",
+            flow_name=flow.flow_name,
         )
         sqs_lambda_stage = SqsToLambdaStage(
             self,
@@ -94,25 +84,36 @@ class DdkApplicationStack(BaseStack):
             ],
         )
 
-        # Create AppFlow ingestion pipeline
+        # Create data pipeline
         (
-            DataPipeline(self, id="ingestion-pipeline").add_stage(
+            DataPipeline(self, id="ingestion-pipeline")
+            .add_stage(
                 appflow_stage,
                 override_rule=Rule(
                     self,
                     "schedule-rule",
-                    enabled=True,
                     schedule=Schedule.rate(Duration.hours(1)),
                     targets=appflow_stage.get_targets(),
                 ),
             )
-        )
-
-        # Create data transformation pipeline
-        (
-            DataPipeline(self, id="transformation-pipeline")
-            .add_stage(s3_event_stage)
-            .add_stage(sqs_lambda_stage)
+            .add_stage(
+                sqs_lambda_stage,
+                # By default, AppFlowIngestionStage stage emits an event after the flow run finishes successfully
+                # Override rule below changes that behavior to call the the stage when data lands in the bucket instead
+                override_rule=Rule(
+                    self,
+                    "s3-object-created-rule",
+                    event_pattern=EventPattern(
+                        source=["aws.s3"],
+                        detail={
+                            "bucket": {"name": [bucket.bucket_name]},
+                            "object": {"key": [{"prefix": "ga-data"}]},
+                        },
+                        detail_type=["Object Created"],
+                    ),
+                    targets=sqs_lambda_stage.get_targets(),
+                ),
+            )
             .add_stage(athena_stage)
         )
 
