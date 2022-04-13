@@ -102,7 +102,7 @@ class DdkApplicationStack(BaseStack):
                     self,
                     "schedule-rule",
                     enabled=True,
-                    schedule=Schedule.rate(Duration.minutes(1)),
+                    schedule=Schedule.rate(Duration.hours(1)),
                     targets=appflow_stage.get_targets(),
                 ),
             )
