@@ -3,7 +3,8 @@ from typing import Any
 from aws_cdk import Duration
 from aws_cdk.aws_appflow import CfnFlow
 from aws_cdk.aws_events import Rule, Schedule
-from aws_cdk.aws_iam import Effect, PolicyStatement, ServicePrincipal
+from aws_cdk.aws_glue_alpha import Database
+from aws_cdk.aws_iam import Effect, PolicyStatement, Role, ServicePrincipal
 from aws_cdk.aws_lambda import Code, LayerVersion
 from aws_cdk.aws_s3 import Bucket, BucketAccessControl
 from aws_ddk_core.base import BaseStack
@@ -26,6 +27,9 @@ class DdkApplicationStack(BaseStack):
 
         # Create S3 bucket
         bucket = self._create_s3_bucket(environment_id=environment_id)
+
+        # Create Database
+        database = self._create_database(database_name="appflow_data")
 
         # Create Google Analytics AppFlow flow
         flow_name = "ga-flow"
@@ -66,14 +70,19 @@ class DdkApplicationStack(BaseStack):
                 )
             ],
         )
+        # Grant lambda function S3 read & write permissions
         bucket.grant_read_write(sqs_lambda_stage.function)
+        # Grant Glue database & table permissions
+        sqs_lambda_stage.function.add_to_role_policy(
+            self._get_glue_db_iam_policy(database_name=database.database_name)
+        )
         athena_stage = AthenaSQLStage(
             self,
             id="athena-sql",
             environment_id=environment_id,
             query_string=(
                 "SELECT year, month, day, device, count(user_count) as cnt "
-                "FROM appflow_data.ga_sample "
+                f"FROM {database.database_name}.ga_sample "
                 "GROUP BY year, month, day, device "
                 "ORDER BY cnt DESC "
                 "LIMIT 10; "
@@ -81,17 +90,7 @@ class DdkApplicationStack(BaseStack):
             output_bucket_name=bucket.bucket_name,
             output_object_key="query-results/",
             additional_role_policy_statements=[
-                PolicyStatement(
-                    effect=Effect.ALLOW,
-                    actions=[
-                        "glue:getDatabase",
-                        "glue:getTable",
-                    ],
-                    resources=[
-                        f"arn:aws:glue:{self.region}:{self.account}:database/appflow_data",
-                        f"arn:aws:glue:{self.region}:{self.account}:table/appflow_data/ga_sample",
-                    ],
-                )
+                self._get_glue_db_iam_policy(database_name=database.database_name)
             ],
         )
 
@@ -150,6 +149,28 @@ class DdkApplicationStack(BaseStack):
             )
         )
         return bucket
+
+    def _create_database(self, database_name: str) -> Database:
+        return Database(
+            self,
+            id=database_name,
+            database_name=database_name,
+        )
+
+    def _get_glue_db_iam_policy(self, database_name: str) -> PolicyStatement:
+        return PolicyStatement(
+            effect=Effect.ALLOW,
+            actions=[
+                "glue:CreateTable",
+                "glue:getDatabase",
+                "glue:getTable",
+            ],
+            resources=[
+                f"arn:aws:glue:{self.region}:{self.account}:catalog",
+                f"arn:aws:glue:{self.region}:{self.account}:database/{database_name}",
+                f"arn:aws:glue:{self.region}:{self.account}:table/{database_name}/*",
+            ],
+        )
 
     def _create_ga_s3_ingest_flow(
         self,

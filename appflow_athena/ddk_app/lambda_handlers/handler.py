@@ -3,10 +3,10 @@ import os
 from datetime import datetime as dt
 
 import boto3
+import awswrangler as wr
 import pandas as pd
 
 s3_client = boto3.client("s3")
-s3_resource = boto3.resource("s3")
 events_client = boto3.client("events")
 
 
@@ -17,9 +17,11 @@ def lambda_handler(event, context):
         bucket_name = payload["detail"]["bucket"]["name"]
         object_key = payload["detail"]["object"]["key"]
 
+        # Read JSON data
         raw_object = s3_client.get_object(Bucket=bucket_name, Key=object_key)
         raw_data = json.loads(raw_object["Body"].read().decode("utf-8"))
 
+        # Transform
         record_dates = [
             dt.strptime(r["dimensions"][0], "%Y%m%d%H")
             for r in raw_data["reports"][0]["data"]["rows"]
@@ -40,13 +42,17 @@ def lambda_handler(event, context):
             }
         )
 
-        output_file = dt.now().strftime("%Y%m%d%H%M%S")
-        output_path = f"/tmp/{output_file}.parquet"
-        df.to_parquet(output_path)
+        output_file_name = dt.now().strftime("%Y%m%d%H%M%S")
+        output_key = f"ga-sample/{output_file_name}.parquet"
 
-        output_key = f"ga-data/{output_file}.parquet"
-        bucket = s3_resource.Bucket(bucket_name)
-        bucket.upload_file(output_path, output_key)
+        # Write parquet file to S3 and create metadata table
+        wr.s3.to_parquet(
+            df,
+            f"s3://{bucket_name}/{output_key}",
+            dataset=True,
+            database="appflow_data",
+            table="ga_sample",
+        )
 
         # Put event for next data stage to process (if any)
         events_client.put_events(
