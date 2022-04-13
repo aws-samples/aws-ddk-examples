@@ -1,13 +1,12 @@
 # AWS DDK Examples
 
-This repository contains a set of example projects for the a[AWS DataOps Development
+This repository contains a set of example projects for the [AWS DataOps Development
 Kit](https://github.com/awslabs/aws-ddk).
 
 ## Table of Contents
 1. [About this Repo](#About)
 2. [Examples](#Examples)
 3. [Learning Resources](#Learning)
-4. [Additional Examples](#AddEx)
 4. [License](#License)
 
 ## About this Repo <a name="About"></a>
