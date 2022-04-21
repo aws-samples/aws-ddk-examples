@@ -1,7 +1,6 @@
 # AWS DDK Examples
 
-This repository contains a set of example projects for the [AWS DataOps Development
-Kit](https://github.com/awslabs/aws-ddk).
+This repository contains a list of example projects for the [AWS DataOps Development Kit (DDK)](https://awslabs.github.io/aws-ddk/).
 
 ## Table of Contents
 1. [About this Repo](#About)
@@ -10,28 +9,26 @@ Kit](https://github.com/awslabs/aws-ddk).
 4. [License](#License)
 
 ## About this Repo <a name="About"></a>
-This repo is our official list of DDK example code. These examples each provide a demonstration of a data pipeline implementation, that could be useful in your use of the DDK for building your own infrastructure.
+This repository holds our official list of DDK examples code. They aim to showcase the different ways you can leverage the DDK to help with your DataOps workloads, including building a data pipeline to ingest SaaS data or to create your private code artifactory, for example.
 
-We welcome contributions to this repo in the form of fixes to existing examples or addition of new examples. For more information on contributing, please see the [CONTRIBUTING](https://github.com/aws-samples/aws-ddk-examples/blob/main/CONTRIBUTING.md) guide.
+We welcome contributions to this repository in the form of enhancements to existing examples or the addition of new ones. For more information on contributing, please see the [CONTRIBUTING](https://github.com/aws-samples/aws-ddk-examples/blob/main/CONTRIBUTING.md) guide.
 
-This is considered an intermediate learning resource and should typically be referenced after reading the DDK Documention or Workshop (please see [Learning Resources](#Learning) for more information on these resources).
+It is assumed that you are already somewhat familiar with the AWS DDK. If not, we strongly recommend that you go through our [Learning Resources](#Learning) first, in particular the DDK workshop and documentation.
 
 ## Examples <a name="Examples"></a>
-This repo contains examples of DDK data stages used in data pipelines. You can find the examples for each of those languages at the following links:
-
 | Examples |
 |----------|
 | [Appflow/Athena](https://github.com/aws-samples/aws-ddk-examples/tree/main/appflow_athena) |
-
+| [Private Artifactory](https://github.com/aws-samples/aws-ddk-examples/tree/main/private_artifactory) |
 
 ## Learning Resources <a name="Learning"></a>
-While this is an excellent learning resource for the DDK, there are other resources that can be referenced to assist with your learning/development process.
+Beyond this repository, there are other resources that can be referenced to assist with your learning/development process.
 
 ### Official Resources
 - [Documentation](https://awslabs.github.io/aws-ddk/)
 - [API Reference](https://awslabs.github.io/aws-ddk/release/stable/api/index)
-- [DDK Workshop](https://catalog.us-east-1.prod.workshops.aws/workshops/3644b48b-1d7c-43ef-a353-6edcd96385af/en-US)
-- [DDK Repository](https://github.com/aws/aws-ddk)
+- [Workshop](https://catalog.us-east-1.prod.workshops.aws/workshops/3644b48b-1d7c-43ef-a353-6edcd96385af/en-US)
+- [Source Repository](https://github.com/aws/aws-ddk)
 
 # License <a name="License"></a>
 
