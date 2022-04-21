@@ -2,11 +2,8 @@
 
 ## Overview
 
-While the AWS DDK holds a rich library of constructs including numerous [data stages](https://awslabs.github.io/aws-ddk/release/latest/api/core/aws_ddk_core.html#data-stages),
-we are aware that they do not satisfy every use case and that customers might need to develop their own.
-
-This example details how to use the DDK to provision a private code artifactory. You create your own Python library of DDK constructs called `ddk_lib`, and then make it available for others in the code artifactory.
-A significant benefit of this approach is that once the library is hosted in the private artifactory, authenticated users can install it and reuse it in their own DDK applications.
+This example details how to use the DDK to provision a private code artifactory. You create your own Python library called `ddk_lib`, and then make it available for others in the code artifactory.
+A significant benefit of this approach is that once the library is hosted in the private artifactory, authenticated users can install it and reuse it in their own applications.
 This strategy encourages collaboration and the sharing of best practice patterns within your organization.
 
 Infrastructure deployed by this app includes a private CodeArtifact domain/repository hosting your Python library, and a continuous integration and deployment pipeline that builds, packages, and pushes the artifacts into the artifactory. 
