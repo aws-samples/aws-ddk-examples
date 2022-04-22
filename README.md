@@ -28,7 +28,7 @@ Beyond this repository, there are other resources that can be referenced to assi
 - [Documentation](https://awslabs.github.io/aws-ddk/)
 - [API Reference](https://awslabs.github.io/aws-ddk/release/stable/api/index)
 - [Workshop](https://catalog.us-east-1.prod.workshops.aws/workshops/3644b48b-1d7c-43ef-a353-6edcd96385af/en-US)
-- [Source Repository](https://github.com/aws/aws-ddk)
+- [Source Repository](https://github.com/awslabs/aws-ddk)
 
 # License <a name="License"></a>
 
