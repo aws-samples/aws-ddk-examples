@@ -43,8 +43,7 @@ You can then deploy your DDK app:
 ddk deploy
 ```
 
-Once the app is provisioned, the CI/CD pipeline builds and packages the artifact. 
-You should then be able to log into your artifactory:
+Once the app is provisioned, the CI/CD pipeline builds and packages the artifact.
 
 ## Using the library
 
