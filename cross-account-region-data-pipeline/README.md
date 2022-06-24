@@ -224,7 +224,7 @@ $ git push --set-upstream origin main
 Verify the `ddk.json` is updated with your configuration and run the deploy command to deploy:
 
 ```
-$ cdk deploy --profile [AWS_PROFILE] --all
+$ ddk deploy --profile [AWS_PROFILE]
 ```
 
 The AWS_PROFILE is the profile for the `cicd` environment to deploy in the same account and region as the source CodeCommit Repository
@@ -385,7 +385,7 @@ $ git push --set-upstream origin main
 Verify the `ddk.json` is updated with your configuration and run the deploy command to deploy:
 
 ```
-$ cdk deploy --profile [AWS_PROFILE] --all
+$ ddk deploy --profile [AWS_PROFILE]
 ```
 
 The AWS_PROFILE is the profile for the `cicd` environment to deploy in the same account and region as the source CodeCommit Repository
