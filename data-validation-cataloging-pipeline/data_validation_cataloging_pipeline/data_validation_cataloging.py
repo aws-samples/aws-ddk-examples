@@ -13,7 +13,7 @@ from aws_cdk.aws_ssm import StringParameter
 from aws_ddk_core.stages import (
     S3EventStage, SqsToLambdaStage
 )
-from data_validation_cataloging_pipeline.stages import (StepFunctionStage)
+from data_validation_cataloging_pipeline.stages import (DataValidationCatalogingStage)
 from constructs import Construct
 
 
@@ -58,7 +58,7 @@ class DataValidationCatalogingStack(BaseStack):
             handler="handler.lambda_handler"
         )
 
-        step_functions_stage = StepFunctionStage(
+        step_functions_stage = DataValidationCatalogingStage(
             self,
             id="state-machine-stage",
             environment_id=self._environment_id, 

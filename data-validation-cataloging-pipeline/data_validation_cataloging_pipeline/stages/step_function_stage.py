@@ -17,7 +17,7 @@ from aws_cdk.aws_ssm import StringParameter
 from aws_cdk.aws_glue import CfnDatabase
 from aws_cdk.aws_lakeformation import CfnPermissions
 
-class StepFunctionStage(StateMachineStage):
+class DataValidationCatalogingStage(StateMachineStage):
     def __init__(
         self,
         scope: Construct,
@@ -36,7 +36,7 @@ class StepFunctionStage(StateMachineStage):
         self._raw_bucket_arn = raw_bucket_arn
         self._didc_table_arn = didc_table_arn
         self._didc_table_key_arn = didc_table_key_arn
-        self._pipeline_id = "ingestion"
+        self._pipeline_id = "validation-cataloging"
 
         self._raw_bucket: IBucket = Bucket.from_bucket_arn(
             self,
@@ -54,7 +54,7 @@ class StepFunctionStage(StateMachineStage):
             f"di-didc-table-key",
             key_arn=self._didc_table_key_arn)
 
-        db_name = f"di-ingestion-data-catalog-{self._environment_id}"
+        db_name = f"di-validation-cataloging-data-catalog-{self._environment_id}"
         self._database = self._create_database(database_name=db_name)
 
         state_machine_role_policy_statements = [

@@ -1,5 +1,5 @@
-from .step_function_stage import StepFunctionStage
+from .step_function_stage import DataValidationCatalogingStage
 
 __all__ = [
-    "StepFunctionStage",
+    "DataValidationCatalogingStage",
 ]
