@@ -4,29 +4,30 @@
 
 ## Prerequisites for the Deployment
 
-To complete this deployment, you'll need the following in your local environment
+To complete this deployment, you'll need the following in your local environment:
 
-Programmatic access to an AWS Account
-Python (version 3.7 or above) and its package manager, pip (version 9.0.3 or above), are required
+- Programmatic access to an AWS Account
+
+- Python (version 3.7 or above) and its package manager, pip (version 9.0.3 or above), are required
 
 ```
 $ python --version
 $ pip --version
 ```
 
-The AWS CLI installed and configured
+- The AWS CLI installed and configured
 
 ```
 $ aws --version
 ```
 
-The AWS CDK CLI (version 2.10 and above) installed, to upgrade use `npm install -g aws-cdk`
+- The AWS CDK CLI (version 2.10 and above) installed, to upgrade use `npm install -g aws-cdk`
 
 ```
 $ cdk --version
 ```
 
-The Git CLI (version 2.28 and above) installed and configured
+- The Git CLI (version 2.28 and above) installed and configured
 
 ```
 $ git --version
@@ -49,9 +50,9 @@ $ git config --list
 
 ## Initial setup with the DDK CLI
 
-At this time, the file in unzipped and you are in the directory. You will follow a set of commands depicted in the diagram below to configure and deploy ADK.
+At this time, the file in unzipped and you are in the directory. You will follow a set of commands depicted in the diagram below to configure and deploy the Cross Account / Cross Region Pipeline.
 
-Continue to the steps below to set up ADK:
+Continue to the steps below to set up the deployment:
 
 Install AWS DDK CLI, a command line interface to manage your DDK apps
 
@@ -77,9 +78,24 @@ This is when the AWS DDK Core library is installed
 ```
 $ pip install -r requirements.txt --no-cache-dir
 ```
-#
+# 
 
-Based on your use case, refer to the following instructions to configure and deploy your data processing pipeline
+## Follow Instructions As Per Your Use Case
+
+Based on your use case, refer to the following instructions to configure and deploy your data processing pipeline:
+
+<center>
+
+|          Use Case         |                   Link To Deploy Guide                  |
+|:-------------------------:|:-------------------------------------------------------:|
+|Same Account Same Region   | [Deployment Guide](#same-account-same-region-pipeline)  | 
+|Same Account Cross Region  | [Deployment Guide](#same-account-cross-region-pipeline) |
+|Cross Account Same Region  | [Deployment Guide](#cross-account-same-region-pipeline) |
+|Cross Account Cross Region | [Deployment Guide](#cross-account-cross-region-pipeline)|
+
+</center>
+
+# 
 
 ## Same Account Same Region Pipeline
 
@@ -141,7 +157,7 @@ Add and push the initial commit to the repository
 
 ```
 $ git add .
-$ git commit -m "Configure ADK"
+$ git commit -m "Configure DDK Data Pipeline"
 $ git push --set-upstream origin main
 ```
 
@@ -215,7 +231,7 @@ Add and push the initial commit to the repository
 
 ```
 $ git add .
-$ git commit -m "Configure ADK"
+$ git commit -m "Configure DDK Data Pipeline"
 $ git push --set-upstream origin main
 ```
 
@@ -296,7 +312,7 @@ Add and push the initial commit to the repository
 
 ```
 $ git add .
-$ git commit -m "Configure ADK"
+$ git commit -m "Configure DDK Data Pipeline"
 $ git push --set-upstream origin main
 ```
 
@@ -376,7 +392,7 @@ Add and push the initial commit to the repository
 
 ```
 $ git add .
-$ git commit -m "Configure ADK"
+$ git commit -m "Configure DDK Data Pipeline"
 $ git push --set-upstream origin main
 ```
 

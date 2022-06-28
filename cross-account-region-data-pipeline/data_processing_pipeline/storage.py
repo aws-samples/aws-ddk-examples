@@ -14,11 +14,10 @@ from aws_cdk.aws_events import Rule
 
 class DataStorage(BaseStack):
 
-    def __init__(self, scope: Construct, id: str, environment_id: str, params: Dict, mode: str, compute_params: Dict, **kwargs: Any) -> None:
+    def __init__(self, scope: Construct, id: str, environment_id: str, mode: str, compute_params: Dict, **kwargs: Any) -> None:
         super().__init__(scope, id, environment_id, **kwargs)
-        self._params = params
         self._environment_id = environment_id
-        self._S3_NAME = params.get('s3BucketName')
+        self._S3_NAME = compute_params.get('s3BucketName')
         self._mode = mode
         self._compute_account = compute_params.get("account")
         self._compute_region = compute_params.get("region")

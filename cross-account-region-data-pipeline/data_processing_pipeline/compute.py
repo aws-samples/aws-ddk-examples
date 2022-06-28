@@ -12,12 +12,11 @@ from typing import Any, Dict
 
 class DataProcessingPipeline(BaseStack):
 
-    def __init__(self, scope: Construct, id: str, environment_id: str, params: Dict, mode: str, storage_params: Dict, **kwargs: Any) -> None:
+    def __init__(self, scope: Construct, id: str, environment_id: str, mode: str, storage_params: Dict, **kwargs: Any) -> None:
         super().__init__(scope, id, environment_id, **kwargs)
-        self._params = params
         self._environment_id = environment_id
         self._mode = mode
-        self._s3_bucket_name = params.get('s3BucketName')
+        self._s3_bucket_name = storage_params.get('s3BucketName')
         self._storage_account = storage_params.get("account")
         self._storage_region = storage_params.get("region")
 
@@ -34,7 +33,7 @@ class DataProcessingPipeline(BaseStack):
         )
 
         if self._mode == "cross_account":
-            cfn_event_bus_policy = CfnEventBusPolicy(
+            CfnEventBusPolicy(
                 self, 
                 "StorageAcctEventBusPolicy",
                 statement_id="AllowStorageAccountPutEvents",
@@ -50,12 +49,12 @@ class DataProcessingPipeline(BaseStack):
             handler="handler.lambda_handler"
         )
 
-        self._data_lake_pipeline: DataPipeline = (
+        self._pipeline: DataPipeline = (
             DataPipeline(
                 self, 
-                id="pipeline_id", 
-                name=f"pipeline_id-pipeline", 
-                description=f"data processing pipeline", 
+                id=f"{self._mode.replace('_','-')}-pipeline-id", 
+                name=f"{self._mode.replace('_','-')}-pipeline", 
+                description="Data processing pipeline", 
             )
             .add_stage(data_lake_s3_event_capture_stage)
             .add_stage(sqs_lambda)
