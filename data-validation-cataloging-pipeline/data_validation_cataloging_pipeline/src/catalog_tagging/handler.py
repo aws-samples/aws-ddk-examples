@@ -28,7 +28,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> None:
         dataset = event["dataset"]
         source = event["source"]
         key = event["keysToProcess"]
-        glue_db_name = f"{PREFIX}-ingestion-data-catalog-{ENV}"
+        glue_db_name = f"{PREFIX}-validation-cataloging-data-catalog-{ENV}"
         glue_table_name = source.upper() + "_" + dataset.upper()
 
         table = dynamodb.Table(DIDC_TABLE_NAME)

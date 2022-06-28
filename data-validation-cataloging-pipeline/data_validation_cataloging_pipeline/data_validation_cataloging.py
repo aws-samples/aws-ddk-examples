@@ -82,9 +82,9 @@ class DataValidationCatalogingStack(BaseStack):
         (
             DataPipeline(
                 self, 
-                id="ingestion-pipeline", 
-                name="ingestion-pipeline", 
-                description="ingestion pipeline using aws-ddk", 
+                id="validation-cataloging-pipeline", 
+                name="validation-cataloging-pipeline", 
+                description="validation-cataloging pipeline using aws-ddk", 
             )
             .add_stage(s3_event_capture_stage)
             .add_stage(sqs_lambda)

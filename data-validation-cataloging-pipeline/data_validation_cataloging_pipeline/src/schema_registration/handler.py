@@ -25,7 +25,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> None:
         source = event["source"]
         schema_name = event["schema_name"]
         bucket_name = event["target_bucket"]
-        glue_db_name = f"{PREFIX}-ingestion-data-catalog-{ENV}"
+        glue_db_name = f"{PREFIX}-validation-cataloging-data-catalog-{ENV}"
         glue_table_name = source.upper() + "_" + dataset.upper()
 
         columns_types, partitions_types, partitions_values = wr.s3.store_parquet_metadata(
