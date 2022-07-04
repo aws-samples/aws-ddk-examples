@@ -1,0 +1,22 @@
+{
+  "environments": {
+    "cicd": {
+      "account": "111111111111",
+      "region": "us-east-1"
+    },
+    "stor": {
+      "account": "111111111111",
+      "region": "us-west-2",
+      "name": "Development Storage",
+      "s3BucketName": "BUCKET_NAME",
+      "manual_approvals": false
+    },
+    "comp": {
+      "account": "111111111111",
+      "region": "us-east-1",
+      "name": "Development Compute",
+      "s3BucketName": "BUCKET_NAME",
+      "manual_approvals": false
+    }
+  }
+}
