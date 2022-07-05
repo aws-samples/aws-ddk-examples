@@ -20,6 +20,8 @@ It is assumed that you are already somewhat familiar with the AWS DDK. If not, w
 |----------|
 | [Appflow/Athena](https://github.com/aws-samples/aws-ddk-examples/tree/main/appflow_athena) |
 | [Private Artifactory](https://github.com/aws-samples/aws-ddk-examples/tree/main/private_artifactory) |
+| [Cross-Account / Cross-Region Data Pipelines](https://github.com/aws-samples/aws-ddk-examples/tree/main/cross-account-region-data-pipeline) |
+| [Data Validation & Cataloging Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/data-validation-cataloging-pipeline) |
 
 ## Learning Resources <a name="Learning"></a>
 Beyond this repository, there are other resources that can be referenced to assist with your learning/development process.
