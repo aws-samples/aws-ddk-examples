@@ -24,7 +24,7 @@ The Purpose of the DDK Serverless Data Lake Framework is to shorten the deployme
 
 ## Reference Architecture
 
-![Alt](/docs/images/SDLF-Data-Lake-DDK.png)
+![Alt](./docs/images/SDLF-Data-Lake-DDK.png)
 
 <br />
 <br />

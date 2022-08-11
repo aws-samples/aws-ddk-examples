@@ -20,7 +20,7 @@ from aws_cdk.aws_events import Rule, Schedule, RuleTargetInput
 from aws_cdk.aws_events_targets import LambdaFunction
 from aws_ddk_core.pipelines import DataPipeline  
 from aws_ddk_core.base import BaseStack
-from aws_cdk.aws_lambda import ILayerVersion, LayerVersion, Function, IFunction
+from aws_cdk.aws_lambda import LayerVersion
 import json
 import os
 from pathlib import Path
@@ -222,7 +222,7 @@ class SDLFPipelineStack(BaseStack):
         wrangler_layer_version = LayerVersion.from_layer_version_arn(
             self,
             "wrangler-layer",
-            layer_version_arn="arn:aws:lambda:us-east-1:336392948345:layer:AWSDataWrangler-Python39:1",
+            layer_version_arn=f"arn:aws:lambda:{self.region}:336392948345:layer:AWSDataWrangler-Python39:1",
         )
 
         return wrangler_layer_version

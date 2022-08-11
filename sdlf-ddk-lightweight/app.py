@@ -16,7 +16,6 @@
 from typing import Any, Dict
 import aws_cdk as cdk
 from aws_ddk_core.cicd import CICDPipelineStack
-#from utils.application_config import GetApplicationParameters
 from data_lake.pipelines import SDLFPipelineStack
 from aws_ddk_core.config import Config
 
@@ -31,9 +30,6 @@ class DataLakeFramework(cdk.Stage):
         super().__init__(scope, f"SDLF-DDK-{environment_id}", **kwargs)
 
         self._environment_id = environment_id
-        # params = GetApplicationParameters(environment_id=self._environment_id)
-        # self._resource_prefix = params.get_resource_prefix()
-        # self._sdlf_params = params.get_data_pipeline_params()
         params = pipeline_params
         self._resource_prefix = params.get("resource_prefix", "ddk")
         self._sdlf_params = params.get("data_pipeline_parameters", {})
@@ -44,9 +40,6 @@ satellite_app = cdk.App()
 config = Config()
 
 cicd_repository_name = config.get_env_config("cicd").get("repository", "sdlf-ddk-example")
-
-#cicd_repository_name = GetApplicationParameters(environment_id="cicd").get_cicd_repository()
-# sns_email = GetApplicationParameters(environment_id="dev").get_sns_email()
 
 pipeline_name = "sdlf-ddk-pipeline"
 pipeline = (
