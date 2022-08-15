@@ -1,0 +1,21 @@
+{
+  "environments": {
+    "cicd": {
+      "repository": "sdlf-ddk-example"
+    },
+    "dev": {
+      "account": "111111111111",
+      "region": "us-east-1",
+      "name": "Development",
+      "manual_approvals": false,
+      "email": "nobody@demo.com",
+      "execute_security_lint": true,
+      "execute_tests": false,
+      "resource_prefix": "sdlf",
+      "data_pipeline_parameters": {
+        "org": "aws",
+        "app": "datalake"
+      }
+    }
+  }
+}

@@ -1,0 +1,394 @@
+{
+  "MEMBERSHIPS": {
+    "columns": {
+      "AREA_ID": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "11.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "END_DATE": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "4.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "LEGISLATIVE_PERIOD_ID": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "12.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "ON_BEHALF_OF_ID": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "2.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "True",
+        "Description": "Unique identifier for the company",
+        "Field Data Type": "Text",
+        "Information Classification": "Confidential",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "ORGANIZATION_ID": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "19.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "True",
+        "Description": "See PeopleGeneral",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "True",
+        "Tokenization": "True"
+      },
+      "PERSON_ID": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "10.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "ROLE": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "4.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "START_DATE": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "4.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      }
+    },
+    "SchemaName": "LEGISLATORS",
+    "Source": "LEGISLATORS",
+    "Source-SchemaName": "LEGISLATORS-LEGISLATORS",
+    "TableId": "03d3f8d7-6612-4200-a2f1-56c7348d7830",
+    "TableName": "MEMBERSHIPS",
+    "TableStatus": "Enterprise Approved"
+  },
+  "ORGANIZATIONS": {
+    "columns": {
+      "CLASSIFICATION": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "11.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "ID": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "12.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "IDENTIFIERS": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "4.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "IMAGE": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "19.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "True",
+        "Description": "See PeopleGeneral",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "True",
+        "Tokenization": "True"
+      },
+      "LINKS": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "2.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "True",
+        "Description": "Unique identifier for the company",
+        "Field Data Type": "Text",
+        "Information Classification": "Confidential",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "NAME": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "6.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Description": "Deal size in millions USD",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "OTHER_NAMES": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "10.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      }
+    },
+    "TableName": "ORGANIZATIONS",
+    "SchemaName": "LEGISLATORS",
+    "Source": "LEGISLATORS",
+    "Source-SchemaName": "LEGISLATORS-LEGISLATORS",
+    "TableId": "03d3f8d7-6612-4200-a2f1-56c7348d7830",
+    "TableStatus": "Enterprise Approved"
+  },
+  "PERSONS": {
+    "columns": {
+      "BIRTH_DATE": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "11.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "CONTACT_DETAILS": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "2.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "True",
+        "Description": "Unique identifier for the company",
+        "Field Data Type": "Text",
+        "Information Classification": "Confidential",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "DEATH_DATE": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "11.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "FAMILY_NAME": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "19.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "True",
+        "Description": "See PeopleGeneral",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "True",
+        "Tokenization": "True"
+      },
+      "GENDER": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "4.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "GIVEN_NAME": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "10.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "ID": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "12.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "IDENTIFIERS": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "6.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Description": "Deal size in millions USD",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "IMAGE": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "3.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Description": "Sequence of deal",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "IMAGES": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "14.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "LINKS": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "13.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "NAME": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "19.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "True",
+        "Description": "See PeopleGeneral",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "True",
+        "Tokenization": "True"
+      },
+      "OTHER_NAMES": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "7.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      },
+      "SORT_NAME": {
+        "Business Taxonomy": "Prospecting",
+        "Column Position": "5.0",
+        "ColumnStatus": "Enterprise Approved",
+        "Data Obfuscation Flag": "False",
+        "Field Data Type": "Text",
+        "Information Classification": "Restricted",
+        "Personally Identifiable Information": "False",
+        "Tokenization": "False"
+      }
+    },
+    "SchemaName": "LEGISLATORS",
+    "Source": "LEGISLATORS",
+    "Source-SchemaName": "LEGISLATORS-LEGISLATORS",
+    "TableId": "03d3f8d7-6612-4200-a2f1-56c7348d7830",
+    "TableName": "PERSONS",
+    "TableStatus": "Enterprise Approved"
+  },
+  "REGIONS": {
+  "columns": {
+    "ID": {
+      "Business Taxonomy": "Prospecting",
+      "Column Position": "2.0",
+      "ColumnStatus": "Enterprise Approved",
+      "Data Obfuscation Flag": "True",
+      "Description": "Unique identifier for the company",
+      "Field Data Type": "Text",
+      "Information Classification": "Confidential",
+      "Personally Identifiable Information": "False",
+      "Tokenization": "False"
+    },
+    "IDENTIFIERS": {
+      "Business Taxonomy": "Prospecting",
+      "Column Position": "11.0",
+      "ColumnStatus": "Enterprise Approved",
+      "Data Obfuscation Flag": "False",
+      "Field Data Type": "Text",
+      "Information Classification": "Restricted",
+      "Personally Identifiable Information": "True",
+      "Tokenization": "True"
+    },
+    "NAME": {
+      "Business Taxonomy": "Prospecting",
+      "Column Position": "2.0",
+      "ColumnStatus": "Enterprise Approved",
+      "Data Obfuscation Flag": "True",
+      "Description": "Unique identifier for the company",
+      "Field Data Type": "Text",
+      "Information Classification": "Confidential",
+      "Personally Identifiable Information": "True",
+      "Tokenization": "True"
+    },
+    "OTHER_NAMES": {
+      "Business Taxonomy": "Prospecting",
+      "Column Position": "11.0",
+      "ColumnStatus": "Enterprise Approved",
+      "Data Obfuscation Flag": "False",
+      "Field Data Type": "Text",
+      "Information Classification": "Restricted",
+      "Personally Identifiable Information": "False",
+      "Tokenization": "False"
+    },
+    "TYPE": {
+      "Business Taxonomy": "Prospecting",
+      "Column Position": "11.0",
+      "ColumnStatus": "Enterprise Approved",
+      "Data Obfuscation Flag": "False",
+      "Field Data Type": "Text",
+      "Information Classification": "Restricted",
+      "Personally Identifiable Information": "True",
+      "Tokenization": "True"
+    }
+  },
+  "SchemaName": "LEGISLATORS",
+  "Source": "LEGISLATORS",
+  "Source-SchemaName": "LEGISLATORS-LEGISLATORS",
+  "TableId": "03d3f8d7-6612-4200-a2f1-56c7348d7830",
+  "TableName": "REGIONS",
+  "TableStatus": "Enterprise Approved"
+  }
+}
