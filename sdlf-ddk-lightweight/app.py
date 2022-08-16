@@ -30,9 +30,8 @@ class DataLakeFramework(cdk.Stage):
         super().__init__(scope, f"SDLF-DDK-{environment_id}", **kwargs)
 
         self._environment_id = environment_id
-        params = pipeline_params
-        self._resource_prefix = params.get("resource_prefix", "ddk")
-        self._sdlf_params = params.get("data_pipeline_parameters", {})
+        self._resource_prefix = pipeline_params.get("resource_prefix", "ddk")
+        self._sdlf_params = pipeline_params.get("data_pipeline_parameters", {})
        
         SDLFPipelineStack(self, f"{self._resource_prefix}-data-lake-pipeline", environment_id=environment_id, resource_prefix=self._resource_prefix, params=self._sdlf_params)
 
@@ -43,7 +42,7 @@ cicd_repository_name = config.get_env_config("cicd").get("repository", "sdlf-ddk
 
 pipeline_name = "sdlf-ddk-pipeline"
 pipeline = (
-    CICDPipelineStack(satellite_app, id=pipeline_name, environment_id="dev",  pipeline_name=pipeline_name)
+    CICDPipelineStack(satellite_app, id=pipeline_name, environment_id="cicd",  pipeline_name=pipeline_name)
     .add_source_action(repository_name=cicd_repository_name)
     .add_synth_action()
     .build()

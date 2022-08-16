@@ -12,21 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from os import pipe
 from typing import Any, Optional
 from dataclasses import dataclass
-from aws_cdk.aws_glue import CfnJob, CfnCrawler, CfnDatabase
-from aws_cdk.aws_sqs import DeadLetterQueue, QueueEncryption
-from aws_cdk.aws_iam import ServicePrincipal, Role, IRole, ManagedPolicy
-from aws_cdk.aws_kms import IKey
-from aws_cdk.aws_s3 import IBucket
-from aws_cdk.aws_lakeformation import CfnPermissions
-import aws_cdk.aws_lakeformation as lakeformation
-from aws_cdk.aws_ssm import StringParameter
-from aws_ddk_core.pipelines.stage import DataStage
+from aws_ddk_core.base import BaseStack
 import aws_cdk as cdk
 from aws_cdk.custom_resources import Provider
 from aws_ddk_core.resources import KMSFactory, SQSFactory
+import aws_cdk.aws_glue as glue
+import aws_cdk.aws_sqs as sqs
+import aws_cdk.aws_iam as iam 
+import aws_cdk.aws_kms as kms
+import aws_cdk.aws_s3 as s3
+import aws_cdk.aws_lakeformation as lf
+import aws_cdk.aws_ssm as ssm
 
 
 @dataclass
@@ -36,14 +34,14 @@ class SDLFDatasetConfig:
     pipeline: str
     stage_a_transform: str
     stage_b_transform: str
-    artifacts_bucket: IBucket
-    artifacts_bucket_key: IKey
-    stage_bucket: IBucket
-    stage_bucket_key: IKey
-    glue_role: IRole
+    artifacts_bucket: s3.IBucket
+    artifacts_bucket_key: kms.IKey
+    stage_bucket: s3.IBucket
+    stage_bucket_key: kms.IKey
+    glue_role: iam.IRole
     register_provider: Provider
 
-class SDLFDatasetStage(DataStage):
+class SDLFDatasetStage(BaseStack):
     def __init__(self, scope, id: str, environment_id: str, resource_prefix: str, config: SDLFDatasetConfig, **kwargs: Any) -> None:
         super().__init__(scope, id, environment_id, **kwargs)
 
@@ -71,14 +69,14 @@ class SDLFDatasetStage(DataStage):
         
     def _create_dataset(self, team: str, pipeline: str, dataset_name: str, path : str, stage_a_transform: Optional[str] = None, stage_b_transform: Optional[str] = None ) -> None:
 
-        job: CfnJob = CfnJob(
+        job: glue.CfnJob = glue.CfnJob(
             self,
             f"{self._resource_prefix}-heavy-transform-{team}-{dataset_name}-job",
             name=f"{self._resource_prefix}-{team}-{dataset_name}-glue-job",
             glue_version="2.0",
             allocated_capacity=2,
-            execution_property=CfnJob.ExecutionPropertyProperty(max_concurrent_runs=4),
-            command=CfnJob.JobCommandProperty(
+            execution_property=glue.CfnJob.ExecutionPropertyProperty(max_concurrent_runs=4),
+            command=glue.CfnJob.JobCommandProperty(
                 name="glueetl",
                 script_location=f"s3://{self._config.artifacts_bucket.bucket_name}/{path}",
             ),
@@ -86,8 +84,8 @@ class SDLFDatasetStage(DataStage):
             role=self._config.glue_role.role_arn,
         )
 
-        lakeformation.CfnDataLakeSettings(self, f"{self._resource_prefix}-{team}-{dataset_name}-DataLakeSettings",
-            admins=[lakeformation.CfnDataLakeSettings.DataLakePrincipalProperty(
+        lf.CfnDataLakeSettings(self, f"{self._resource_prefix}-{team}-{dataset_name}-DataLakeSettings",
+            admins=[lf.CfnDataLakeSettings.DataLakePrincipalProperty(
                 data_lake_principal_identifier=self._config.glue_role.role_arn
             )])
 
@@ -124,10 +122,10 @@ class SDLFDatasetStage(DataStage):
             properties=service_setup_properties
         )
 
-        database: CfnDatabase = CfnDatabase(
+        database: glue.CfnDatabase = glue.CfnDatabase(
             self,
             f"{self._resource_prefix}-{team}-{dataset_name}-database",
-            database_input=CfnDatabase.DatabaseInputProperty(
+            database_input=glue.CfnDatabase.DatabaseInputProperty(
                 name=f"aws_datalake_{self._environment_id}_{team}_{dataset_name}_db",
                 location_uri=f"s3://{self._config.stage_bucket.bucket_name}/post-stage/{team}/{dataset_name}"
             ),
@@ -135,14 +133,14 @@ class SDLFDatasetStage(DataStage):
             
         )
 
-        CfnPermissions(
+        lf.CfnPermissions(
             self,
             f"{self._resource_prefix}-{team}-{dataset_name}-glue-job-database-lakeformation-permissions",
-            data_lake_principal=CfnPermissions.DataLakePrincipalProperty(
+            data_lake_principal=lf.CfnPermissions.DataLakePrincipalProperty(
                 data_lake_principal_identifier=self._config.glue_role.role_arn
             ),
-            resource=CfnPermissions.ResourceProperty(
-                database_resource=CfnPermissions.DatabaseResourceProperty(name=database.ref)
+            resource=lf.CfnPermissions.ResourceProperty(
+                database_resource=lf.CfnPermissions.DatabaseResourceProperty(name=database.ref)
             ),
             permissions=["CREATE_TABLE", "ALTER", "DROP"],
         )
@@ -160,7 +158,7 @@ class SDLFDatasetStage(DataStage):
             removal_policy=cdk.RemovalPolicy.DESTROY,
         )
 
-        routing_dlq = DeadLetterQueue(
+        routing_dlq = sqs.DeadLetterQueue(
             max_receive_count=1, 
             queue=SQSFactory.queue(self, 
                             id=f'{self._resource_prefix}-{team}-{dataset_name}-dlq-b.fifo',
@@ -168,10 +166,10 @@ class SDLFDatasetStage(DataStage):
                             queue_name=f'{self._resource_prefix}-{team}-{dataset_name}-dlq-b.fifo', 
                             fifo=True,
                             visibility_timeout=cdk.Duration.seconds(60),
-                            encryption=QueueEncryption.KMS,
+                            encryption=sqs.QueueEncryption.KMS,
                             encryption_master_key=sqs_key))
 
-        StringParameter(
+        ssm.StringParameter(
             self,
             f'{self._resource_prefix}-{team}-{dataset_name}-dlq-b.fifo-ssm',
             parameter_name=f"/SDLF/SQS/{team}/{dataset_name}StageBDLQ",
@@ -185,11 +183,11 @@ class SDLFDatasetStage(DataStage):
             queue_name=f'{self._resource_prefix}-{team}-{dataset_name}-queue-b.fifo', 
             fifo=True,
             visibility_timeout=cdk.Duration.seconds(60),
-            encryption=QueueEncryption.KMS,
+            encryption=sqs.QueueEncryption.KMS,
             encryption_master_key=sqs_key, 
             dead_letter_queue=routing_dlq)
 
-        StringParameter(
+        ssm.StringParameter(
             self,
             f'{self._resource_prefix}-{team}-{dataset_name}-queue-b.fifo-ssm',
             parameter_name=f"/SDLF/SQS/{team}/{dataset_name}StageBQueue",
@@ -197,34 +195,34 @@ class SDLFDatasetStage(DataStage):
         )
 
         # Glue Crawler
-        crawler_role: Role = Role(
+        crawler_role: iam.Role = iam.Role(
             self,
             f"{self._resource_prefix}-{team}-{dataset_name}-glue-crawler-role",
-            assumed_by=ServicePrincipal("glue.amazonaws.com"),
-            managed_policies=[ManagedPolicy.from_aws_managed_policy_name("service-role/AWSGlueServiceRole")],
+            assumed_by=iam.ServicePrincipal("glue.amazonaws.com"),
+            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSGlueServiceRole")],
         )
         self._config.stage_bucket_key.grant_decrypt(crawler_role)
         self._config.stage_bucket.grant_read_write(crawler_role)
 
-        CfnPermissions(
+        lf.CfnPermissions(
             self,
             f"{self._resource_prefix}-{team}-{dataset_name}-glue-crawler-lf-permissions",
-            data_lake_principal=CfnPermissions.DataLakePrincipalProperty(
+            data_lake_principal=lf.CfnPermissions.DataLakePrincipalProperty(
                 data_lake_principal_identifier=crawler_role.role_arn
             ),
-            resource=CfnPermissions.ResourceProperty(
-                database_resource=CfnPermissions.DatabaseResourceProperty(name=database.ref)
+            resource=lf.CfnPermissions.ResourceProperty(
+                database_resource=lf.CfnPermissions.DatabaseResourceProperty(name=database.ref)
             ),
             permissions=["CREATE_TABLE", "ALTER", "DROP"],
         )
 
-        crawler = CfnCrawler(
+        crawler = glue.CfnCrawler(
             self,
             f"{self._resource_prefix}-{team}-{dataset_name}-crawler",
             name=f"{self._resource_prefix}-{team}-{dataset_name}-post-stage-crawler",
             database_name=database.ref,
-            targets=CfnCrawler.TargetsProperty(
-                s3_targets=[CfnCrawler.S3TargetProperty(path=f"s3://{self._config.stage_bucket.bucket_name}/post-stage/{team}/{dataset_name}")] 
+            targets=glue.CfnCrawler.TargetsProperty(
+                s3_targets=[glue.CfnCrawler.S3TargetProperty(path=f"s3://{self._config.stage_bucket.bucket_name}/post-stage/{team}/{dataset_name}")] 
             ),
             role=crawler_role.role_arn,
         )
@@ -232,5 +230,5 @@ class SDLFDatasetStage(DataStage):
 
 
     @property
-    def database_crawler(self) -> CfnCrawler:
+    def database_crawler(self) -> glue.CfnCrawler:
         return self._crawler
