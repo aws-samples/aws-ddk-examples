@@ -41,6 +41,7 @@ class FoundationsStage(BaseStack):
         resource_prefix: str,
         app: str,
         org:str,
+        runtime: lmbda.Runtime,
         **kwargs: Any,
     ) -> None:
         super().__init__(scope, id, environment_id, **kwargs)
@@ -70,8 +71,8 @@ class FoundationsStage(BaseStack):
         )
 
         
-        self._create_register()
-        self._routing_function = self._create_routing_lambda()
+        self._create_register(runtime)
+        self._routing_function = self._create_routing_lambda(runtime)
         self._lakeformation_bucket_registration_role = self._create_lakeformation_bucket_registration_role()
         self._raw_bucket, self._raw_bucket_key = self._create_bucket(name="raw")
         self._stage_bucket, self._stage_bucket_key = self._create_bucket(name="stage")
@@ -83,7 +84,7 @@ class FoundationsStage(BaseStack):
         self._data_lake_library = self._create_data_lake_library_layer()
         
 
-    def _create_routing_lambda(self) -> None:
+    def _create_routing_lambda(self, runtime: lmbda.Runtime) -> None:
 
         #Lambda
         routing_function: lmbda.Function = LambdaFactory.function(
@@ -96,7 +97,7 @@ class FoundationsStage(BaseStack):
             description="routes to the right team and pipeline",
             timeout=cdk.Duration.seconds(60),
             memory_size=256,
-            runtime = lmbda.Runtime.PYTHON_3_8,
+            runtime = runtime,
             environment={
                 "ENV": self._environment_id,
                 "APP": self._app,
@@ -106,7 +107,33 @@ class FoundationsStage(BaseStack):
         )
         self._object_metadata.grant_read_write_data(routing_function)
         self._datasets.grant_read_write_data(routing_function)
-        
+        routing_function.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=[
+                    "kms:CreateGrant",
+                    "kms:Decrypt",
+                    "kms:DescribeKey",
+                    "kms:Encrypt",
+                    "kms:GenerateDataKey",
+                    "kms:GenerateDataKeyPair",
+                    "kms:GenerateDataKeyPairWithoutPlaintext",
+                    "kms:GenerateDataKeyWithoutPlaintext",
+                    "kms:ReEncryptTo",
+                    "kms:ReEncryptFrom",
+                    "kms:ListAliases",
+                    "kms:ListGrants",
+                    "kms:ListKeys",
+                    "kms:ListKeyPolicies"
+                ],
+                resources=["*"],
+                conditions={
+                    "ForAnyValue:StringLike":{
+                        "kms:ResourceAliases": f"alias/*"
+                    }
+                }
+            )
+        )
         routing_function.add_to_role_policy(
                 iam.PolicyStatement(
                     effect=iam.Effect.ALLOW,
@@ -181,7 +208,7 @@ class FoundationsStage(BaseStack):
         )
         return table
 
-    def _create_register(self) -> None:
+    def _create_register(self, runtime: lmbda.Runtime) -> None:
 
         self._register_function: lmbda.Function = LambdaFactory.function(
             self,
@@ -192,7 +219,7 @@ class FoundationsStage(BaseStack):
             memory_size=256,
             description="Registers Datasets, Pipelines and Stages into their respective DynamoDB tables",
             timeout=cdk.Duration.seconds(15 * 60),
-            runtime = lmbda.Runtime.PYTHON_3_8,
+            runtime = runtime,
             environment={
                 "OCTAGON_DATASET_TABLE_NAME": self._datasets.table_name,
                 "OCTAGON_PIPELINE_TABLE_NAME": self._pipelines.table_name

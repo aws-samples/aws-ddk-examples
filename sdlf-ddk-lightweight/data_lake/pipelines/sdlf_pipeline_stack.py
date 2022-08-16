@@ -58,7 +58,8 @@ class SDLFPipelineStack(BaseStack):
             environment_id=self._environment_id, 
             resource_prefix=self._resource_prefix, 
             app=self._app, 
-            org=self._org
+            org=self._org,
+            runtime=lmbda.Runtime.PYTHON_3_9
         )
 
         dataset_names = []
