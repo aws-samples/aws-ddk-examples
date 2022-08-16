@@ -19,18 +19,20 @@ from typing import Any, Dict
 
 import aws_cdk as cdk
 from aws_ddk_core.pipelines.stage import DataStage
-import aws_cdk.aws_dynamodb as DDB
-from aws_cdk.aws_iam import Effect, PolicyDocument, PolicyStatement, Role, ServicePrincipal, ManagedPolicy
-from aws_cdk.aws_kms import Key, IKey
-from aws_cdk.aws_lakeformation import CfnResource
-from aws_cdk.aws_lambda import Code, Function, Runtime, LayerVersion, IFunction, ILayerVersion
-from aws_cdk.aws_s3 import Bucket, BucketEncryption, BlockPublicAccess, BucketAccessControl, IBucket
-from aws_cdk.aws_ssm import StringParameter
+from aws_ddk_core.base import BaseStack
+from aws_ddk_core.resources import S3Factory, KMSFactory, LambdaFactory
+import aws_cdk.aws_dynamodb as ddb
+import aws_cdk.aws_iam as iam
+import aws_cdk.aws_kms as kms
+import aws_cdk.aws_lakeformation as lf
+import aws_cdk.aws_lambda as lmbda
+import aws_cdk.aws_s3  as s3
+import aws_cdk.aws_ssm as ssm
 from aws_cdk.custom_resources import Provider
 from aws_cdk.aws_s3_deployment import BucketDeployment, ServerSideEncryption, Source
-from aws_ddk_core.resources import S3Factory, KMSFactory, LambdaFactory
 
-class FoundationsStage(DataStage):
+
+class FoundationsStage(BaseStack):
     def __init__(
         self,
         scope,
@@ -39,6 +41,7 @@ class FoundationsStage(DataStage):
         resource_prefix: str,
         app: str,
         org:str,
+        runtime: lmbda.Runtime,
         **kwargs: Any,
     ) -> None:
         super().__init__(scope, id, environment_id, **kwargs)
@@ -50,26 +53,26 @@ class FoundationsStage(DataStage):
 
         self._object_metadata = self._create_octagon_ddb_table(
             name=f"octagon-ObjectMetadata-{self._environment_id}",
-            ddb_props={"partition_key": DDB.Attribute(name="id", type=DDB.AttributeType.STRING)},
+            ddb_props={"partition_key": ddb.Attribute(name="id", type=ddb.AttributeType.STRING)},
         )
     
         self._datasets = self._create_octagon_ddb_table(
             name=f"octagon-Datasets-{self._environment_id}",
-            ddb_props={"partition_key": DDB.Attribute(name="name", type=DDB.AttributeType.STRING)},
+            ddb_props={"partition_key": ddb.Attribute(name="name", type=ddb.AttributeType.STRING)},
         )
 
         self._pipelines = self._create_octagon_ddb_table(
             name=f"octagon-Pipelines-{self._environment_id}",
-            ddb_props={"partition_key": DDB.Attribute(name="name", type=DDB.AttributeType.STRING)},
+            ddb_props={"partition_key": ddb.Attribute(name="name", type=ddb.AttributeType.STRING)},
         )
         self._peh = self._create_octagon_ddb_table(
             name=f"octagon-PipelineExecutionHistory-{self._environment_id}",
-            ddb_props={"partition_key": DDB.Attribute(name="id", type=DDB.AttributeType.STRING)},
+            ddb_props={"partition_key": ddb.Attribute(name="id", type=ddb.AttributeType.STRING)},
         )
 
         
-        self._create_register()
-        self._routing_function = self._create_routing_lambda()
+        self._create_register(runtime)
+        self._routing_function = self._create_routing_lambda(runtime)
         self._lakeformation_bucket_registration_role = self._create_lakeformation_bucket_registration_role()
         self._raw_bucket, self._raw_bucket_key = self._create_bucket(name="raw")
         self._stage_bucket, self._stage_bucket_key = self._create_bucket(name="stage")
@@ -81,20 +84,20 @@ class FoundationsStage(DataStage):
         self._data_lake_library = self._create_data_lake_library_layer()
         
 
-    def _create_routing_lambda(self) -> None:
+    def _create_routing_lambda(self, runtime: lmbda.Runtime) -> None:
 
         #Lambda
-        routing_function: Function = LambdaFactory.function(
+        routing_function: lmbda.Function = LambdaFactory.function(
             self,
             id=f"{self._resource_prefix}-data-lake-routing-function",
             environment_id = self._environment_id,
             function_name=f"{self._resource_prefix}-data-lake-routing",
-            code=Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/lambdas/routing")),
+            code=lmbda.Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/lambdas/routing")),
             handler="handler.lambda_handler",
             description="routes to the right team and pipeline",
             timeout=cdk.Duration.seconds(60),
             memory_size=256,
-            runtime = Runtime.PYTHON_3_8,
+            runtime = runtime,
             environment={
                 "ENV": self._environment_id,
                 "APP": self._app,
@@ -102,61 +105,38 @@ class FoundationsStage(DataStage):
                 "PREFIX": self._resource_prefix
             },
         )
-        
+        self._object_metadata.grant_read_write_data(routing_function)
+        self._datasets.grant_read_write_data(routing_function)
         routing_function.add_to_role_policy(
-                PolicyStatement(
-                    effect=Effect.ALLOW,
-                    actions=[
-                        "dynamodb:DescribeTable",
-                        "dynamodb:Query",
-                        "dynamodb:Scan",
-                        "dynamodb:GetItem",
-                        "dynamodb:PutItem",
-                        "dynamodb:ConditionCheckItem",
-                        "dynamodb:DeleteItem",
-                        "dynamodb:UpdateItem",
-                        "dynamodb:GetRecords",
-                        "dynamodb:ListTables",
-                        "dynamodb:DescribeTable"
-                    ],
-                    resources=[
-                        self._object_metadata.table_arn,
-                        f"{self._object_metadata.table_arn}/*",
-                        self._datasets.table_arn,
-                        f"{self._datasets.table_arn}/*"
-                    ],
-                )
-            )
-        routing_function.add_to_role_policy(
-                PolicyStatement(
-                    effect=Effect.ALLOW,
-                    actions=[
-                        "kms:CreateGrant",
-                        "kms:Decrypt",
-                        "kms:DescribeKey",
-                        "kms:Encrypt",
-                        "kms:GenerateDataKey",
-                        "kms:GenerateDataKeyPair",
-                        "kms:GenerateDataKeyPairWithoutPlaintext",
-                        "kms:GenerateDataKeyWithoutPlaintext",
-                        "kms:ReEncryptTo",
-                        "kms:ReEncryptFrom",
-                        "kms:ListAliases",
-                        "kms:ListGrants",
-                        "kms:ListKeys",
-                        "kms:ListKeyPolicies"
-                    ],
-                    resources=["*"],
-                    conditions={
-                        "ForAnyValue:StringLike":{
-                            "kms:ResourceAliases": f"alias/*"
-                        }
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=[
+                    "kms:CreateGrant",
+                    "kms:Decrypt",
+                    "kms:DescribeKey",
+                    "kms:Encrypt",
+                    "kms:GenerateDataKey",
+                    "kms:GenerateDataKeyPair",
+                    "kms:GenerateDataKeyPairWithoutPlaintext",
+                    "kms:GenerateDataKeyWithoutPlaintext",
+                    "kms:ReEncryptTo",
+                    "kms:ReEncryptFrom",
+                    "kms:ListAliases",
+                    "kms:ListGrants",
+                    "kms:ListKeys",
+                    "kms:ListKeyPolicies"
+                ],
+                resources=["*"],
+                conditions={
+                    "ForAnyValue:StringLike":{
+                        "kms:ResourceAliases": f"alias/*"
                     }
-                )
+                }
+            )
         )
         routing_function.add_to_role_policy(
-                PolicyStatement(
-                    effect=Effect.ALLOW,
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
                     actions=[
                         "sqs:SendMessage",
                         "sqs:DeleteMessage",
@@ -171,8 +151,8 @@ class FoundationsStage(DataStage):
                 )
         )
         routing_function.add_to_role_policy(
-                PolicyStatement(
-                    effect=Effect.ALLOW,
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
                     actions=[
                         "ssm:GetParameter",
                         "ssm:GetParameters"
@@ -183,19 +163,19 @@ class FoundationsStage(DataStage):
 
         routing_function.add_permission(
             id= "invoke-lambda-eventbridge",
-            principal= ServicePrincipal("events.amazonaws.com"),
+            principal= iam.ServicePrincipal("events.amazonaws.com"),
             action= "lambda:InvokeFunction"
         )
 
         return routing_function
 
     
-    def _create_octagon_ddb_table(self, name: str, ddb_props: Dict[str, Any]) -> DDB.Table:
+    def _create_octagon_ddb_table(self, name: str, ddb_props: Dict[str, Any]) -> ddb.Table:
         
         tbleName = name.split("-")[1]
 
         #ddb kms key resource
-        table_key: Key = KMSFactory.key(
+        table_key: kms.Key = KMSFactory.key(
             self,
             id=f"{name}-table-key",
             environment_id = self._environment_id,
@@ -207,20 +187,20 @@ class FoundationsStage(DataStage):
         )
 
         #ddb resource
-        table: DDB.Table = DDB.Table(
+        table: ddb.Table = ddb.Table(
             self,
             f"{name}-table",
             table_name=name,
-            encryption=DDB.TableEncryption.CUSTOMER_MANAGED,
+            encryption=ddb.TableEncryption.CUSTOMER_MANAGED,
             encryption_key=table_key,
-            billing_mode=DDB.BillingMode.PAY_PER_REQUEST,
+            billing_mode=ddb.BillingMode.PAY_PER_REQUEST,
             removal_policy= cdk.RemovalPolicy.DESTROY,
             point_in_time_recovery=True,
             **ddb_props,
         )
 
         #SSM for ddb table name
-        StringParameter(
+        ssm.StringParameter(
             self,
             f"{name}-table-name-ssm",
             parameter_name=f"/SDLF/DynamoDB/{tbleName}",
@@ -228,18 +208,18 @@ class FoundationsStage(DataStage):
         )
         return table
 
-    def _create_register(self) -> None:
+    def _create_register(self, runtime: lmbda.Runtime) -> None:
 
-        self._register_function: Function = LambdaFactory.function(
+        self._register_function: lmbda.Function = LambdaFactory.function(
             self,
             id="register-function",
             environment_id = self._environment_id,
-            code=Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/lambdas/register")),
+            code=lmbda.Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/lambdas/register")),
             handler="handler.on_event",
             memory_size=256,
             description="Registers Datasets, Pipelines and Stages into their respective DynamoDB tables",
             timeout=cdk.Duration.seconds(15 * 60),
-            runtime = Runtime.PYTHON_3_8,
+            runtime = runtime,
             environment={
                 "OCTAGON_DATASET_TABLE_NAME": self._datasets.table_name,
                 "OCTAGON_PIPELINE_TABLE_NAME": self._pipelines.table_name
@@ -255,25 +235,25 @@ class FoundationsStage(DataStage):
         )
 
     def _create_lakeformation_bucket_registration_role(self) -> None:
-        lakeformation_bucket_registration_role: Role = Role(
+        lakeformation_bucket_registration_role: iam.Role = iam.Role(
             self,
             "lakeformation-bucket-registration-role",
-            assumed_by=ServicePrincipal("lakeformation.amazonaws.com"),
+            assumed_by=iam.ServicePrincipal("lakeformation.amazonaws.com"),
             inline_policies={
-                "LakeFormationDataAccessPolicyForS3": PolicyDocument(
+                "LakeFormationDataAccessPolicyForS3": iam.PolicyDocument(
                     statements=[
-                        PolicyStatement(
-                            effect=Effect.ALLOW,
+                        iam.PolicyStatement(
+                            effect=iam.Effect.ALLOW,
                             actions=["s3:ListAllMyBuckets"],
                             resources=[ "arn:aws:s3:::*"],
                         ),
-                        PolicyStatement(
-                            effect=Effect.ALLOW,
+                        iam.PolicyStatement(
+                            effect=iam.Effect.ALLOW,
                             actions=["s3:ListBucket"],
                             resources=[f"arn:aws:s3:::{self._resource_prefix}-{self._environment_id}-{cdk.Aws.REGION}-{cdk.Aws.ACCOUNT_ID}-*"],
                         ),
-                        PolicyStatement(
-                            effect=Effect.ALLOW,
+                        iam.PolicyStatement(
+                            effect=iam.Effect.ALLOW,
                             actions=[
                                 "s3:GetObject",
                                 "s3:GetObjectAttributes",
@@ -294,8 +274,8 @@ class FoundationsStage(DataStage):
 
         return lakeformation_bucket_registration_role
 
-    def _create_bucket(self, name: str) -> Bucket:
-        bucket_key: Key = KMSFactory.key(
+    def _create_bucket(self, name: str) -> s3.Bucket:
+        bucket_key: kms.Key = KMSFactory.key(
             self,
             id=f"{self._resource_prefix}-{name}-bucket-key",
             environment_id=self._environment_id,
@@ -306,34 +286,34 @@ class FoundationsStage(DataStage):
             removal_policy=cdk.RemovalPolicy.DESTROY
         )
 
-        StringParameter(
+        ssm.StringParameter(
             self,
             f"{self._resource_prefix}-{name}-bucket-key-arn-ssm",
             parameter_name=f"/SDLF/KMS/{name.title()}BucketKeyArn",
             string_value=bucket_key.key_arn,
         )
 
-        bucket: Bucket = S3Factory.bucket(
+        bucket: s3.Bucket = S3Factory.bucket(
             self,
             id=f"{self._resource_prefix}-{name}-bucket",
             environment_id = self._environment_id,
             bucket_name=f"{self._resource_prefix}-{self._environment_id}-{cdk.Aws.REGION}-{cdk.Aws.ACCOUNT_ID}-{name}",
-            encryption=BucketEncryption.KMS,
+            encryption=s3.BucketEncryption.KMS,
             encryption_key=bucket_key,
-            access_control=BucketAccessControl.BUCKET_OWNER_FULL_CONTROL,
-            block_public_access=BlockPublicAccess.BLOCK_ALL,
+            access_control=s3.BucketAccessControl.BUCKET_OWNER_FULL_CONTROL,
+            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             removal_policy=cdk.RemovalPolicy.RETAIN,
             event_bridge_enabled = True
         )
 
-        StringParameter(
+        ssm.StringParameter(
             self,
             f"{self._resource_prefix}-{name}-bucket-name-ssm",
             parameter_name=f"/SDLF/S3/{name.title()}Bucket",
             string_value=f"{self._resource_prefix}-{self._environment_id}-{cdk.Aws.REGION}-{cdk.Aws.ACCOUNT_ID}-{name}",
         )
 
-        CfnResource(
+        lf.CfnResource(
             self,
             f"{self._resource_prefix}-{name}-bucket-lakeformation-registration",
             resource_arn=bucket.bucket_arn,
@@ -342,8 +322,8 @@ class FoundationsStage(DataStage):
         )
         
         bucket_key.add_to_resource_policy(
-            PolicyStatement(
-                effect=Effect.ALLOW,
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
                 actions=[
                     "kms:CreateGrant",
                     "kms:Decrypt",
@@ -360,12 +340,12 @@ class FoundationsStage(DataStage):
     
 
     def _create_data_lake_library_layer(self) -> None:
-        data_lake_library_layer = LayerVersion(
+        data_lake_library_layer = lmbda.LayerVersion(
             self,
             "data-lake-library-layer",
             layer_version_name=f"data-lake-library",
-            code=Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/layers/data_lake_library")),
-            compatible_runtimes=[Runtime.PYTHON_3_9],
+            code=lmbda.Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/layers/data_lake_library")),
+            compatible_runtimes=[lmbda.Runtime.PYTHON_3_9],
             description=f"{self._resource_prefix} Data Lake Library",
             license="Apache-2.0",
         )
@@ -374,11 +354,11 @@ class FoundationsStage(DataStage):
 
     def _create_sdlf_glue_artifacts(self) -> None:
 
-        bucket_deployment_role: Role = Role(
+        bucket_deployment_role: iam.Role = iam.Role(
             self,
             f"{self._resource_prefix}-glue-script-s3-deployment-role",
-            assumed_by=ServicePrincipal("lambda.amazonaws.com"),
-            managed_policies=[ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")],
+            assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
+            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")],
         )
         
         self._artifacts_bucket_key.grant_encrypt_decrypt(bucket_deployment_role)
@@ -396,21 +376,21 @@ class FoundationsStage(DataStage):
             role=bucket_deployment_role,
         )
         
-        glue_role: Role = Role(
+        glue_role: iam.Role = iam.Role(
             self,
             f"{self._resource_prefix}-glue-stageb-job-role",
-            assumed_by=ServicePrincipal("glue.amazonaws.com"),
-            managed_policies=[ManagedPolicy.from_aws_managed_policy_name("service-role/AWSGlueServiceRole")],
+            assumed_by=iam.ServicePrincipal("glue.amazonaws.com"),
+            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSGlueServiceRole")],
         )
         
-        ManagedPolicy(
+        iam.ManagedPolicy(
             self,
             f"{self._resource_prefix}-glue-job-policy",
             roles=[glue_role],
-            document=PolicyDocument(
+            document=iam.PolicyDocument(
                 statements=[
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "kms:CreateGrant",
                             "kms:Decrypt",
@@ -426,13 +406,13 @@ class FoundationsStage(DataStage):
                         resources=[f"arn:aws:kms:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:key/*"],
                         conditions={"ForAnyValue:StringLike": {"kms:ResourceAliases": f"alias/{self._resource_prefix}-*-key"}},
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=["s3:ListBucket"],
                         resources=[f"arn:aws:s3:::{self._resource_prefix}-{self._environment_id}-{cdk.Aws.REGION}-{cdk.Aws.ACCOUNT_ID}-*"],
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "s3:GetObject",
                             "s3:PutObject",
@@ -440,8 +420,8 @@ class FoundationsStage(DataStage):
                         ],
                         resources=[f"arn:aws:s3:::{self._resource_prefix}-{self._environment_id}-{cdk.Aws.REGION}-{cdk.Aws.ACCOUNT_ID}-*"],
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "lakeformation:DeregisterResource",
                             "lakeformation:GetDataAccess",
@@ -483,8 +463,8 @@ class FoundationsStage(DataStage):
                         ],
                         resources=["*"],
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=["dynamodb:GetItem"],
                         resources=[
                             f"arn:aws:dynamodb:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:table/{self._resource_prefix}-{self._environment_id}-*",
@@ -498,35 +478,35 @@ class FoundationsStage(DataStage):
 
 
     @property
-    def raw_bucket(self) -> IBucket:
+    def raw_bucket(self) -> s3.IBucket:
         return self._raw_bucket
     
     @property
-    def raw_bucket_key(self) -> IKey:
+    def raw_bucket_key(self) -> kms.IKey:
         return self._raw_bucket_key
 
     @property
-    def stage_bucket(self) -> IBucket:
+    def stage_bucket(self) -> s3.IBucket:
         return self._stage_bucket
 
     @property
-    def stage_bucket_key(self) -> IKey:
+    def stage_bucket_key(self) -> kms.IKey:
         return self._stage_bucket_key
 
     @property
-    def artifacts_bucket(self) -> IBucket:
+    def artifacts_bucket(self) -> s3.IBucket:
         return self._artifacts_bucket
 
     @property
-    def artifacts_bucket_key(self) -> IKey:
+    def artifacts_bucket_key(self) -> kms.IKey:
         return self._artifacts_bucket_key
 
     @property
-    def glue_role(self) -> IBucket:
+    def glue_role(self) -> s3.IBucket:
         return self._glue_role
 
     @property
-    def routing_function(self) -> IFunction:
+    def routing_function(self) -> lmbda.IFunction:
         return self._routing_function
 
     @property
@@ -534,5 +514,5 @@ class FoundationsStage(DataStage):
         return self._register_provider
 
     @property
-    def data_lake_library(self) -> ILayerVersion:
+    def data_lake_library(self) -> lmbda.ILayerVersion:
         return self._data_lake_library

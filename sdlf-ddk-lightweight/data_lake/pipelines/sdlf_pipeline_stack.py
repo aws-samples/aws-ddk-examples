@@ -16,11 +16,12 @@
 from typing import Any
 from aws_ddk_core.stages import S3EventStage 
 import aws_cdk as cdk
-from aws_cdk.aws_events import Rule, Schedule, RuleTargetInput
-from aws_cdk.aws_events_targets import LambdaFunction
 from aws_ddk_core.pipelines import DataPipeline  
 from aws_ddk_core.base import BaseStack
-from aws_cdk.aws_lambda import LayerVersion
+import aws_cdk.aws_events as events
+import aws_cdk.aws_events_targets as targets
+import aws_cdk.aws_lambda as lmbda
+
 import json
 import os
 from pathlib import Path
@@ -57,7 +58,8 @@ class SDLFPipelineStack(BaseStack):
             environment_id=self._environment_id, 
             resource_prefix=self._resource_prefix, 
             app=self._app, 
-            org=self._org
+            org=self._org,
+            runtime=lmbda.Runtime.PYTHON_3_9
         )
 
         dataset_names = []
@@ -105,13 +107,13 @@ class SDLFPipelineStack(BaseStack):
                     )
                 )
                 
-            Rule(
+            events.Rule(
                 self,
                 f"{resource_prefix}-{team}-{pipeline}-{dataset}-schedule-rule",
-                schedule=Schedule.rate(cdk.Duration.minutes(5)),
-                targets=[LambdaFunction(
+                schedule=events.Schedule.rate(cdk.Duration.minutes(5)),
+                targets=[targets.LambdaFunction(
                     self.routing_b,
-                    event=RuleTargetInput.from_object({
+                    event=events.RuleTargetInput.from_object({
                         "team": team,
                         "pipeline": pipeline,
                         "pipeline_stage": "StageB",
@@ -170,7 +172,8 @@ class SDLFPipelineStack(BaseStack):
                 routing_lambda = self._foundations_stage.routing_function, 
                 data_lake_lib = self._foundations_stage.data_lake_library,
                 register_provider = self._foundations_stage.register_provider,
-                wrangler_layer = self._wrangler_layer
+                wrangler_layer = self._wrangler_layer,
+                runtime = lmbda.Runtime.PYTHON_3_9
             ),
         )
         
@@ -197,7 +200,8 @@ class SDLFPipelineStack(BaseStack):
                 data_lake_lib = self._foundations_stage.data_lake_library,
                 register_provider = self._foundations_stage.register_provider,
                 wrangler_layer = self._wrangler_layer,
-                database_crawler_name = f"{resource_prefix}-{team}-{dataset}-post-stage-crawler"
+                database_crawler_name = f"{resource_prefix}-{team}-{dataset}-post-stage-crawler",
+                runtime = lmbda.Runtime.PYTHON_3_9
             ),
         )
         self.routing_b = data_lake_heavy_transform.routing_lambda
@@ -219,7 +223,7 @@ class SDLFPipelineStack(BaseStack):
         return
 
     def _create_wrangler_layer(self):
-        wrangler_layer_version = LayerVersion.from_layer_version_arn(
+        wrangler_layer_version = lmbda.LayerVersion.from_layer_version_arn(
             self,
             "wrangler-layer",
             layer_version_arn=f"arn:aws:lambda:{self.region}:336392948345:layer:AWSDataWrangler-Python39:1",

@@ -17,36 +17,34 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from aws_cdk.aws_stepfunctions_tasks import LambdaInvoke, CallAwsService
-from aws_cdk.aws_glue import CfnCrawler
-from aws_cdk.aws_stepfunctions import JsonPath
-from aws_cdk.aws_kms import IKey
-from aws_ddk_core.pipelines import StateMachineStage
-from aws_cdk.aws_events import EventPattern, IRuleTarget
-from aws_cdk.aws_events_targets import LambdaFunction
-from aws_cdk.aws_iam import Effect, PolicyStatement
-from aws_cdk.aws_lambda import Code, LayerVersion, Runtime, ILayerVersion, IFunction
-from aws_cdk import aws_stepfunctions as sfn
-from aws_cdk.aws_iam import Effect, ManagedPolicy, PolicyDocument, PolicyStatement, Role, ServicePrincipal
-from aws_cdk.aws_s3 import IBucket
-from aws_cdk.aws_ssm import StringParameter
 import aws_cdk as cdk
-from aws_cdk.custom_resources import Provider
-
-
+from aws_ddk_core.pipelines import StateMachineStage
 from aws_ddk_core.resources import LambdaFactory
+from aws_cdk.custom_resources import Provider
+import aws_cdk.aws_stepfunctions_tasks as tasks
+import aws_cdk.aws_glue as glue
+import aws_cdk.aws_stepfunctions as sfn
+import aws_cdk.aws_kms as kms
+import aws_cdk.aws_events as events
+import aws_cdk.aws_events_targets as targets
+import aws_cdk.aws_iam as iam
+import aws_cdk.aws_lambda as lmbda
+import aws_cdk.aws_stepfunctions as sfn
+import aws_cdk.aws_s3  as s3
+import aws_cdk.aws_ssm as ssm
 
 
 @dataclass
 class SDLFHeavyTransformConfig:
     team: str
     pipeline: str
-    stage_bucket: IBucket
-    stage_bucket_key: IKey
-    data_lake_lib: ILayerVersion
+    stage_bucket: s3.IBucket
+    stage_bucket_key: kms.IKey
+    data_lake_lib: lmbda.ILayerVersion
     register_provider : Provider
-    wrangler_layer: ILayerVersion
-    database_crawler_name: CfnCrawler
+    wrangler_layer: lmbda.ILayerVersion
+    database_crawler_name: glue.CfnCrawler
+    runtime: lmbda.Runtime
 
 class SDLFHeavyTransform(StateMachineStage):
     def __init__(
@@ -131,7 +129,7 @@ class SDLFHeavyTransform(StateMachineStage):
         parallel_state.add_catch(
                 error_task,
                 errors = ["States.ALL"],
-                result_path = JsonPath.DISCARD
+                result_path = sfn.JsonPath.DISCARD
                 )
         
         error_task.next(fail_state)
@@ -143,15 +141,15 @@ class SDLFHeavyTransform(StateMachineStage):
                 parallel_state               
             ),
             additional_role_policy_statements=[
-                PolicyStatement(
-                    effect=Effect.ALLOW,
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
                     actions=[
                         "lambda:InvokeFunction"
                     ],
                     resources=[f"arn:aws:lambda:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:function:{self._prefix}-{self.team}-{self.pipeline}-*"],
                 ),
-                PolicyStatement(
-                    effect=Effect.ALLOW,
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
                     actions=[
                         "glue:StartCrawler"
                     ],
@@ -159,15 +157,15 @@ class SDLFHeavyTransform(StateMachineStage):
                 )
             ]
         )
-        StringParameter(
+        ssm.StringParameter(
             self,
             f"{self._prefix}-{self.team}-{self.pipeline}-state-machine-b-ssm",
             parameter_name=f"/SDLF/SM/{self.team}/{self.pipeline}StageBSM",
             string_value=self.state_machine.state_machine_arn,
         )
 
-    def _create_crawler_task(self,team, pipeline) -> CallAwsService:
-        crawler_task = CallAwsService(
+    def _create_crawler_task(self,team, pipeline) -> tasks.CallAwsService:
+        crawler_task = tasks.CallAwsService(
             self, 
             f"{self._prefix}-{team}-{pipeline}-crawler-task",
             service="glue",
@@ -175,37 +173,37 @@ class SDLFHeavyTransform(StateMachineStage):
             parameters={
                     "Name": sfn.JsonPath.string_at("$.body.crawler_name")
             },
-            result_path=JsonPath.DISCARD,
+            result_path=sfn.JsonPath.DISCARD,
             iam_resources=[f"arn:aws:glue:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:crawler/{self._config.database_crawler_name}"]
         )
 
         return crawler_task
 
 
-    def _create_process_lambda(self,team, pipeline) -> LambdaInvoke:
-        process_lambda_role = Role(
+    def _create_process_lambda(self,team, pipeline) -> tasks.LambdaInvoke:
+        process_lambda_role = iam.Role(
             self,
             f"{self._prefix}-process-role-{team}-{pipeline}-b",
             role_name=f"{self._prefix}-process-role-{team}-{pipeline}-b",
-            assumed_by=ServicePrincipal("lambda.amazonaws.com"),
-            managed_policies=[ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")],
+            assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
+            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")],
         )
-        ManagedPolicy(
+        iam.ManagedPolicy(
             self,
             f"{self._prefix}-process-policy-{team}-{pipeline}-b",
             managed_policy_name = f"{self._prefix}-process-policy-{team}-{pipeline}-b",
             roles=[process_lambda_role],
-            document=PolicyDocument(
+            document=iam.PolicyDocument(
                 statements=[
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "glue:StartJobRun"
                         ],
                         resources=["*"],
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "kms:CreateGrant",
                             "kms:Decrypt",
@@ -221,8 +219,8 @@ class SDLFHeavyTransform(StateMachineStage):
                             }
                         }
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "dynamodb:BatchGetItem",
                             "dynamodb:GetItem",
@@ -238,8 +236,8 @@ class SDLFHeavyTransform(StateMachineStage):
                         ],
                         resources=[f"arn:aws:dynamodb:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:table/octagon-*"],
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "ssm:GetParameter",
                             "ssm:GetParameters"
@@ -257,16 +255,16 @@ class SDLFHeavyTransform(StateMachineStage):
             f"{self._prefix}-{team}-{pipeline}-process-b",
             environment_id = self._environment_id,
             function_name=f"{self._prefix}-{team}-{pipeline}-process-b",
-            code=Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/lambdas/sdlf_heavy_transform/process-object")),
+            code=lmbda.Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/lambdas/sdlf_heavy_transform/process-object")),
             handler="handler.lambda_handler",
             role = process_lambda_role,
             description="exeute heavy transform",
             timeout=cdk.Duration.minutes(15),
             memory_size=256,
             layers = [self._config.data_lake_lib, self._config.wrangler_layer],
-            runtime = Runtime.PYTHON_3_9,
+            runtime = self._config.runtime,
         )
-        process_task = LambdaInvoke(
+        process_task = tasks.LambdaInvoke(
             self,
             f"{self._prefix}-{team}-{pipeline}-process-task-b",
             lambda_function=process_lambda,
@@ -275,30 +273,30 @@ class SDLFHeavyTransform(StateMachineStage):
         return process_task
 
 
-    def _create_postupdate_lambda(self,team, pipeline ) -> LambdaInvoke:
-        postupdate_lambda_role = Role(
+    def _create_postupdate_lambda(self,team, pipeline ) -> tasks.LambdaInvoke:
+        postupdate_lambda_role = iam.Role(
             self,
             f"{self._prefix}-postupdate-role-{team}-{pipeline}-b",
             role_name=f"{self._prefix}-postupdate-role-{team}-{pipeline}-b",
-            assumed_by=ServicePrincipal("lambda.amazonaws.com"),
-            managed_policies=[ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")],
+            assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
+            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")],
         )
-        ManagedPolicy(
+        iam.ManagedPolicy(
             self,
             f"{self._prefix}-postupdate-policy-{team}-{pipeline}-b",
             managed_policy_name = f"{self._prefix}-postupdate-policy-{team}-{pipeline}-b",
             roles=[postupdate_lambda_role],
-            document=PolicyDocument(
+            document=iam.PolicyDocument(
                 statements=[
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "dynamodb:GetItem"
                         ],
                         resources=[f"arn:aws:dynamodb:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:table/octagon-*"],
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "kms:CreateGrant",
                             "kms:Decrypt",
@@ -314,8 +312,8 @@ class SDLFHeavyTransform(StateMachineStage):
                             }
                         }
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "dynamodb:BatchGetItem",
                             "dynamodb:GetRecords",
@@ -330,8 +328,8 @@ class SDLFHeavyTransform(StateMachineStage):
                         ],
                         resources=[f"arn:aws:dynamodb:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:table/octagon-*"],
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "ssm:GetParameter",
                             "ssm:GetParameters"
@@ -350,16 +348,16 @@ class SDLFHeavyTransform(StateMachineStage):
             f"{self._prefix}-{team}-{pipeline}-postupdate-b",
             environment_id = self._environment_id,
             function_name=f"{self._prefix}-{team}-{pipeline}-postupdate-b",
-            code=Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/lambdas/sdlf_heavy_transform/postupdate-metadata")),
+            code=lmbda.Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/lambdas/sdlf_heavy_transform/postupdate-metadata")),
             handler="handler.lambda_handler",
             role = postupdate_lambda_role,
             description="post update metadata",
             timeout=cdk.Duration.minutes(10),
             memory_size=256,
             layers = [self._config.data_lake_lib],
-            runtime = Runtime.PYTHON_3_9,
+            runtime = self._config.runtime,
         )
-        postupdate_task = LambdaInvoke(
+        postupdate_task = tasks.LambdaInvoke(
             self,
             f"{self._prefix}-{team}-{pipeline}-postupdate-task-b",
             lambda_function=postupdate_lambda,
@@ -367,23 +365,23 @@ class SDLFHeavyTransform(StateMachineStage):
         )
         return postupdate_task
 
-    def _create_error_lambda(self,team, pipeline ) -> LambdaInvoke:
-        error_lambda_role = Role(
+    def _create_error_lambda(self,team, pipeline ) -> tasks.LambdaInvoke:
+        error_lambda_role = iam.Role(
             self,
             f"{self._prefix}-error-role-{team}-{pipeline}-b",
             role_name=f"{self._prefix}-error-role-{team}-{pipeline}-b",
-            assumed_by=ServicePrincipal("lambda.amazonaws.com"),
-            managed_policies=[ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")],
+            assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
+            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")],
         )
-        ManagedPolicy(
+        iam.ManagedPolicy(
             self,
             f"{self._prefix}-error-policy-{team}-{pipeline}-b",
             managed_policy_name = f"{self._prefix}-error-policy-{team}-{pipeline}-b",
             roles=[error_lambda_role],
-            document=PolicyDocument(
+            document=iam.PolicyDocument(
                 statements=[
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "sqs:SendMessage",
                             "sqs:GetQueueAttributes",
@@ -394,8 +392,8 @@ class SDLFHeavyTransform(StateMachineStage):
                         ],
                         resources=[f"arn:aws:sqs:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:{self._prefix}-{team}-*"],
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "kms:CreateGrant",
                             "kms:Decrypt",
@@ -411,8 +409,8 @@ class SDLFHeavyTransform(StateMachineStage):
                             }
                         }
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "ssm:GetParameter",
                             "ssm:GetParameters"
@@ -428,16 +426,16 @@ class SDLFHeavyTransform(StateMachineStage):
             f"{self._prefix}-{team}-{pipeline}-error-b",
             environment_id = self._environment_id,
             function_name=f"{self._prefix}-{team}-{pipeline}-error-b",
-            code=Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/lambdas/sdlf_heavy_transform/error")),
+            code=lmbda.Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/lambdas/sdlf_heavy_transform/error")),
             handler="handler.lambda_handler",
             role = error_lambda_role,
             description="send errors to DLQ",
             timeout=cdk.Duration.minutes(10),
             memory_size=256,
             layers = [self._config.data_lake_lib],
-            runtime = Runtime.PYTHON_3_9,
+            runtime = self._config.runtime,
         )
-        error_task = LambdaInvoke(
+        error_task = tasks.LambdaInvoke(
             self,
             f"{self._prefix}-{team}-{pipeline}-error-task-b",
             lambda_function=error_lambda,
@@ -446,44 +444,44 @@ class SDLFHeavyTransform(StateMachineStage):
         return error_task
 
 
-    def _create_check_job_lambda(self,team, pipeline ) -> LambdaInvoke:
-        check_job_lambda_role = Role(
+    def _create_check_job_lambda(self,team, pipeline ) -> tasks.LambdaInvoke:
+        check_job_lambda_role = iam.Role(
             self,
             f"{self._prefix}-check-job-role-{team}-{pipeline}-b",
             role_name=f"{self._prefix}-check-job-role-{team}-{pipeline}-b",
-            assumed_by=ServicePrincipal("lambda.amazonaws.com"),
-            managed_policies=[ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")],
+            assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
+            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")],
         )
-        ManagedPolicy(
+        iam.ManagedPolicy(
             self,
             f"{self._prefix}-check-job-policy-{team}-{pipeline}-b",
             managed_policy_name = f"{self._prefix}-check-job-policy-{team}-{pipeline}-b",
             roles=[check_job_lambda_role],
-            document=PolicyDocument(
+            document=iam.PolicyDocument(
                 statements=[
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "dynamodb:UpdateItem"
                         ],
                         resources=[f"arn:aws:dynamodb:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:table/octagon-*"],
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "glue:GetJobRun"
                         ],
                         resources=["*"],
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "dynamodb:GetItem"
                         ],
                         resources=[f"arn:aws:dynamodb:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:table/octagon-*"],
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "kms:CreateGrant",
                             "kms:Decrypt",
@@ -499,8 +497,8 @@ class SDLFHeavyTransform(StateMachineStage):
                             }
                         }
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "ssm:GetParameter",
                             "ssm:GetParameters"
@@ -517,15 +515,15 @@ class SDLFHeavyTransform(StateMachineStage):
             environment_id = self._environment_id,
             role = check_job_lambda_role,
             function_name=f"{self._prefix}-{team}-{pipeline}-checkjob-b",
-            code=Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/lambdas/sdlf_heavy_transform/check-job")),
+            code=lmbda.Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/lambdas/sdlf_heavy_transform/check-job")),
             handler="handler.lambda_handler",
             description="check if glue job still running",
             timeout=cdk.Duration.minutes(10),
             memory_size=256,
             layers = [self._config.data_lake_lib, self._config.wrangler_layer],
-            runtime = Runtime.PYTHON_3_9,
+            runtime = self._config.runtime,
         )
-        check_job_task = LambdaInvoke(
+        check_job_task = tasks.LambdaInvoke(
             self,
             f"{self._prefix}-{team}-{pipeline}-check-job-task",
             lambda_function=check_job_lambda,
@@ -533,30 +531,30 @@ class SDLFHeavyTransform(StateMachineStage):
         )
         return check_job_task
 
-    def _create_routing_lambda(self, team, pipeline ) -> IFunction:
-        routing_lambda_role = Role(
+    def _create_routing_lambda(self, team, pipeline ) -> lmbda.IFunction:
+        routing_lambda_role = iam.Role(
             self,
             f"{self._prefix}-routing-role-{team}-{pipeline}-b",
             role_name=f"{self._prefix}-routing-role-{team}-{pipeline}-b",
-            assumed_by=ServicePrincipal("lambda.amazonaws.com"),
-            managed_policies=[ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")],
+            assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
+            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")],
         )
-        ManagedPolicy(
+        iam.ManagedPolicy(
             self,
             f"{self._prefix}-routing-policy-{team}-{pipeline}-b",
             managed_policy_name = f"{self._prefix}-routing-policy-{team}-{pipeline}-b",
             roles=[routing_lambda_role],
-            document=PolicyDocument(
+            document=iam.PolicyDocument(
                 statements=[
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "states:StartExecution"
                         ],
                         resources=[f"arn:aws:states:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:stateMachine:*"],
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "sqs:ChangeMessageVisibility",
                             "sqs:DeleteMessage",
@@ -566,8 +564,8 @@ class SDLFHeavyTransform(StateMachineStage):
                         ],
                         resources=[f"arn:aws:sqs:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:{self._prefix}-{team}-*"],
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "kms:CreateGrant",
                             "kms:Decrypt",
@@ -583,15 +581,15 @@ class SDLFHeavyTransform(StateMachineStage):
                             }
                         }
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "dynamodb:GetItem"
                         ],
                         resources=[f"arn:aws:dynamodb:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:table/octagon-*"],
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "kms:CreateGrant",
                             "kms:Decrypt",
@@ -607,8 +605,8 @@ class SDLFHeavyTransform(StateMachineStage):
                             }
                         }
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "ssm:GetParameter",
                             "ssm:GetParameters"
@@ -625,33 +623,33 @@ class SDLFHeavyTransform(StateMachineStage):
             environment_id = self._environment_id,
             role = routing_lambda_role,
             function_name=f"{self._prefix}-{team}-{pipeline}-routing-b",
-            code=Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/lambdas/sdlf_heavy_transform/routing")),
+            code=lmbda.Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/lambdas/sdlf_heavy_transform/routing")),
             handler="handler.lambda_handler",
             description="Triggers Step Function stageB",
             timeout=cdk.Duration.minutes(10),
             memory_size=256,
             layers = [self._config.data_lake_lib],
-            runtime = Runtime.PYTHON_3_9,
+            runtime = self._config.runtime,
         )
         return routing_lambda
 
     def _create_redrive_lambda(self, team, pipeline) -> None:
-        redrive_lambda_role = Role(
+        redrive_lambda_role = iam.Role(
             self,
             f"{self._prefix}-redrive-role-{team}-{pipeline}-b",
             role_name=f"{self._prefix}-redrive-role-{team}-{pipeline}-b",
-            assumed_by=ServicePrincipal("lambda.amazonaws.com"),
-            managed_policies=[ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")],
+            assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
+            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")],
         )
-        ManagedPolicy(
+        iam.ManagedPolicy(
             self,
             f"{self._prefix}-redrive-policy-{team}-{pipeline}-b",
             managed_policy_name = f"{self._prefix}-redrive-policy-{team}-{pipeline}-b",
             roles=[redrive_lambda_role],
-            document=PolicyDocument(
+            document=iam.PolicyDocument(
                 statements=[
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "sqs:SendMessage",
                             "sqs:ReceiveMessage",
@@ -664,15 +662,15 @@ class SDLFHeavyTransform(StateMachineStage):
                         ],
                         resources=[f"arn:aws:sqs:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:{self._prefix}-{team}-*"],
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "states:StartExecution"
                         ],
                         resources=[f"arn:aws:states:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:stateMachine:*"],
                     ),
-                    PolicyStatement(
-                        effect=Effect.ALLOW,
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
                         actions=[
                             "ssm:GetParameter",
                             "ssm:GetParameters"
@@ -689,7 +687,7 @@ class SDLFHeavyTransform(StateMachineStage):
             environment_id = self._environment_id,
             role = redrive_lambda_role,
             function_name=f"{self._prefix}-{team}-{pipeline}-redrive-b",
-            code=Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/lambdas/sdlf_heavy_transform/redrive")),
+            code=lmbda.Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/lambdas/sdlf_heavy_transform/redrive")),
             handler="handler.lambda_handler",
             environment={
                 "TEAM": self.team,
@@ -700,13 +698,13 @@ class SDLFHeavyTransform(StateMachineStage):
             timeout=cdk.Duration.minutes(10),
             memory_size=256,
             layers = [self._config.data_lake_lib],
-            runtime = Runtime.PYTHON_3_9,
+            runtime = self._config.runtime,
         )
         return None
         
 
-    def get_targets(self) -> Optional[List[IRuleTarget]]:
-        return [LambdaFunction(self._routing_lambda), ]
+    def get_targets(self) -> Optional[List[events.IRuleTarget]]:
+        return [targets.LambdaFunction(self._routing_lambda), ]
 
     @property
     def routing_lambda(self):

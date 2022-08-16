@@ -135,11 +135,16 @@ $ pip install -r requirements.txt --no-cache-dir
 
 <br />
 
-If your AWS account hasn't been used to deploy DDK apps before, then you need to bootstrap your environment:
+If your AWS account hasn't been used to deploy DDK apps before, then you need to bootstrap your environment for both the `cicd` and the `dev` environments:
 
 ```
 $ ddk bootstrap --help
-$ ddk bootstrap --profile [AWS_PROFILE]
+$ ddk bootstrap --profile [AWS_PROFILE] -e cicd
+```
+
+```
+$ ddk bootstrap --help
+$ ddk bootstrap --profile [AWS_PROFILE] -e dev
 ```
 
 <br />
