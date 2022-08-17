@@ -41,7 +41,7 @@ class SDLFDatasetConfig:
     glue_role: iam.IRole
     register_provider: Provider
 
-class SDLFDatasetStage(BaseStack):
+class SDLFDatasetStack(BaseStack):
     def __init__(self, scope, id: str, environment_id: str, resource_prefix: str, config: SDLFDatasetConfig, **kwargs: Any) -> None:
         super().__init__(scope, id, environment_id, **kwargs)
 
