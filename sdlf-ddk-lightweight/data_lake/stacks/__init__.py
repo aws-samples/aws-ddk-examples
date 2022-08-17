@@ -13,12 +13,11 @@
 # limitations under the License.
 
 
-from .sdlf_light_transform import SDLFLightTransform, SDLFLightTransformConfig
-from .sdlf_heavy_transform import SDLFHeavyTransform, SDLFHeavyTransformConfig
+from .foundations_stack import FoundationsStack
+from .sdlf_dataset_stack import SDLFDatasetStack, SDLFDatasetConfig
 
 __all__ = [
-    "SDLFLightTransform",
-    "SDLFLightTransformConfig",
-    "SDLFHeavyTransform", 
-    "SDLFHeavyTransformConfig"
+    "FoundationsStage",
+    "SDLFDatasetStage",
+    "SDLFDatasetConfig"
 ]

@@ -32,7 +32,7 @@ from aws_cdk.custom_resources import Provider
 from aws_cdk.aws_s3_deployment import BucketDeployment, ServerSideEncryption, Source
 
 
-class FoundationsStage(BaseStack):
+class FoundationsStack(BaseStack):
     def __init__(
         self,
         scope,

@@ -31,8 +31,11 @@ from ..stages import (
     SDLFLightTransformConfig,
     SDLFHeavyTransform,
     SDLFHeavyTransformConfig,
-    FoundationsStage,
-    SDLFDatasetStage,
+)
+
+from ..stacks import (
+    FoundationsStack,
+    SDLFDatasetStack,
     SDLFDatasetConfig
 )
 
@@ -52,7 +55,7 @@ class SDLFPipelineStack(BaseStack):
 
         self._wrangler_layer = self._create_wrangler_layer()
 
-        self._foundations_stage = FoundationsStage(
+        self._foundations_stage = FoundationsStack(
             self, 
             id="foundation-stage", 
             environment_id=self._environment_id, 
@@ -87,7 +90,7 @@ class SDLFPipelineStack(BaseStack):
                 stage_b_transform = customer_config.get("stage_b_transform", "sdlf_heavy_transform")
                 
                 # Init Dataset Stage and Set Getters
-                SDLFDatasetStage(
+                SDLFDatasetStack(
                     self, 
                     id=f"{team}-{dataset}-dataset-stage", 
                     environment_id=self._environment_id, 
