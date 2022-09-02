@@ -150,6 +150,25 @@ $ ddk bootstrap --profile [AWS_PROFILE] -e dev
 <br />
 <br />
 
+### Adding LakeFormation Data Lake Settings
+
+<br />
+
+In the AWS Console, navigate to AWS Lake Formation. Click on Settings on the left-hand side menu and make sure both boxes are unchecked:
+
+- `Use only IAM access control for new databases`
+- `Use only IAM access control for new tables in new databases`
+
+Click the `Save` button on the bottom right-hand side of the page when done.
+
+Next, click on `Administrative roles and tasks` on the left-hand side menu and click on `Choose Administrators`. Add both:
+
+- Your current IAM role as a Data Lake administrator
+- The `CloudFormationExecutionRole` IAM role name returned by the DDK Bootstrap Stack for the environment you are deploying to (e.g. `ddk-ENV-hnb659fds-cfn-exec-ACCOUNTID-REGION`)
+
+<br />
+<br />
+
 ### Configure ddk.json 
 
 <br />
@@ -234,7 +253,6 @@ Examples of datasets are:
 - A group of files from a data source (E.g. XML files from a Telemetry system)
 - A streaming data source (E.g. Kinesis data stream batching files and dumping them into S3)
 
-For this QuickStart, a Glue database and crawler alongside Lake Formation permissions are created. However, this will depend on the use case with the requirements for unstructured data or for a streaming data source likely to be different.
 
 <br />
 <br />
