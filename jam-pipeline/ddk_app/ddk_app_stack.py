@@ -4,7 +4,6 @@ from aws_cdk.aws_lambda import Code, LayerVersion
 from aws_cdk.aws_s3 import Bucket
 from aws_ddk_core.base import BaseStack
 from aws_ddk_core.pipelines import DataPipeline
-from aws_ddk_core.resources import S3Factory
 from aws_ddk_core.stages import KinesisToS3Stage, SqsToLambdaStage
 from constructs import Construct
 
