@@ -15,13 +15,17 @@ We welcome contributions to this repository in the form of enhancements to exist
 
 It is assumed that you are already somewhat familiar with the AWS DDK. If not, we strongly recommend that you go through our [Learning Resources](#Learning) first, in particular the DDK workshop and documentation.
 
+If you would like to start your journey by looking at an example, we recommend you to start with [Basic Data Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/basic-data-pipeline) example from the list below.
+
 ## Examples <a name="Examples"></a>
-| Examples |
-|----------|
-| [Appflow/Athena](https://github.com/aws-samples/aws-ddk-examples/tree/main/appflow_athena) |
-| [Private Artifactory](https://github.com/aws-samples/aws-ddk-examples/tree/main/private_artifactory) |
+| Examples                                                                                                                                    |
+|---------------------------------------------------------------------------------------------------------------------------------------------|
+| [Basic Data Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/basic-data-pipeline)                                        |
+| [Appflow/Athena](https://github.com/aws-samples/aws-ddk-examples/tree/main/appflow_athena)                                                  |
+| [Private Artifactory](https://github.com/aws-samples/aws-ddk-examples/tree/main/private_artifactory)                                        |
 | [Cross-Account / Cross-Region Data Pipelines](https://github.com/aws-samples/aws-ddk-examples/tree/main/cross-account-region-data-pipeline) |
-| [Data Validation & Cataloging Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/data-validation-cataloging-pipeline) |
+| [Data Validation & Cataloging Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/data-validation-cataloging-pipeline)      |
+| [SDLF DDK Lightweight](https://github.com/aws-samples/aws-ddk-examples/tree/main/sdlf-ddk-lightweight)                                      |
 
 ## Learning Resources <a name="Learning"></a>
 Beyond this repository, there are other resources that can be referenced to assist with your learning/development process.
