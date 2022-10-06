@@ -4,8 +4,13 @@ from typing import Any
 import aws_cdk as cdk
 import aws_cdk.aws_iam as iam
 from aws_cdk.aws_glue import CfnCrawler
-from aws_cdk.aws_glue_alpha import (Code, GlueVersion, JobExecutable,
-                                    JobLanguage, JobType)
+from aws_cdk.aws_glue_alpha import (
+    Code,
+    GlueVersion,
+    JobExecutable,
+    JobLanguage,
+    JobType,
+)
 from aws_ddk_core.base import BaseStack
 from aws_ddk_core.pipelines import DataPipeline
 from aws_ddk_core.resources import S3Factory
@@ -47,11 +52,9 @@ class DdkApplicationStack(BaseStack):
                 )
             ],
         )
-        glue_crawler_role.add_to_policy(
-            iam.PolicyStatement(
-                actions=["s3:*"],
-                resources=[bucket.bucket_arn, f"{bucket.bucket_arn}/*"],
-            )
+        bucket.grant_read(
+            glue_crawler_role,
+            objects_key_pattern="target/",  # optionally specify exactly which bucket prefix you need access to
         )
 
         glue_transform_stage = GlueTransformStage(
@@ -74,8 +77,8 @@ class DdkApplicationStack(BaseStack):
             ),
             crawler_role=glue_crawler_role,
             job_args={
-                "--S3_SOURCE_PATH": f"s3://{bucket.bucket_name}/source/",
-                "--S3_TARGET_PATH": f"s3://{bucket.bucket_name}/target/",
+                "--S3_SOURCE_PATH": bucket.arn_for_objects("source/"),
+                "--S3_TARGET_PATH": bucket.arn_for_objects("target/"),
             },
         )
 
