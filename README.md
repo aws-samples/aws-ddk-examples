@@ -25,7 +25,8 @@ If you would like to start your journey by looking at an example, we recommend y
 | [Private Artifactory](https://github.com/aws-samples/aws-ddk-examples/tree/main/private_artifactory)                                        |
 | [Cross-Account / Cross-Region Data Pipelines](https://github.com/aws-samples/aws-ddk-examples/tree/main/cross-account-region-data-pipeline) |
 | [Data Validation & Cataloging Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/data-validation-cataloging-pipeline)      |
-| [SDLF DDK Lightweight](https://github.com/aws-samples/aws-ddk-examples/tree/main/sdlf-ddk-lightweight)                                      |
+| [SDLF DDK Lightweight](https://github.com/aws-samples/aws-ddk-examples/tree/main/sdlf-ddk-lightweight)   
+| [Simple Glue Tranform](https://github.com/aws-samples/aws-ddk-examples/tree/main/simple-glue-transform)                                      |
 
 ## Learning Resources <a name="Learning"></a>
 Beyond this repository, there are other resources that can be referenced to assist with your learning/development process.
