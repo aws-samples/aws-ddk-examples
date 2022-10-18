@@ -7,7 +7,7 @@ This pattern deploys an automated data pipeline that handles multiple different 
 ## Architecture
 The instructions in this readme will help you deploy the following AWS architecture:
 
->![Screenshot](./docs/ddk_file_standardization_pipeline_updated.png)
+>![Screenshot](./docs/ddk_file_standardization_pipeline_architecture.png)
 
 
 Here is a high-level overview of each service's role:
