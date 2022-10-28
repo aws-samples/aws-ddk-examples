@@ -17,3 +17,6 @@ cdk.out
 ddk.out/*
 .ddk.out/*
 .out
+
+# type stubs
+.typings

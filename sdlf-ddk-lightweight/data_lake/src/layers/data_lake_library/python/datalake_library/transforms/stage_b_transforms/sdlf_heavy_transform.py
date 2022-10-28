@@ -15,6 +15,7 @@
 #######################################################
 import json
 import datetime as dt
+import os
 
 import boto3
 
@@ -35,7 +36,7 @@ class CustomTransform():
     def __init__(self):
         logger.info("Glue Job Blueprint Heavy Transform initiated")
 
-    def transform_object(self, bucket, keys, team, dataset):
+    def transform_object(self, bucket, keys, team, dataset, database_name):
         #######################################################
         # We assume a Glue Job has already been created based on
         # customer needs. This function makes an API call to start it
@@ -51,6 +52,7 @@ class CustomTransform():
         # S3 Path where Glue Job outputs processed keys
         # IMPORTANT: Build the output s3_path without the s3://stage-bucket/
         processed_keys_path = 'post-stage/{}/{}'.format(team, dataset)
+
         # Submitting a new Glue Job
         job_response = client.start_job_run(
             JobName=job_name,
@@ -59,6 +61,7 @@ class CustomTransform():
                 '--JOB_NAME': 'sdlf-{}-{}-glue-job'.format(team, dataset),
                 '--SOURCE_LOCATION': 's3://{}/{}'.format(bucket, keys[0].rsplit('/', 1)[0]),
                 '--OUTPUT_LOCATION': 's3://{}/{}'.format(bucket, processed_keys_path),
+                '--DATABASE_NAME': database_name,
                 '--job-bookmark-option': 'job-bookmark-enable'
             },
             MaxCapacity=2.0

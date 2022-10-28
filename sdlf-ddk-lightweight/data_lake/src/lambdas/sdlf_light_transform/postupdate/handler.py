@@ -84,9 +84,17 @@ def lambda_handler(event, context):
         logger.info('Sending messages to next SQS queue if it exists')
         sqs_config = SQSConfiguration(team, dataset, ''.join(
             [stage[:-1], chr(ord(stage[-1]) + 1)]))
-        sqs_interface = SQSInterface(sqs_config.get_stage_queue_name)
-        sqs_interface.send_batch_messages_to_fifo_queue(
-            processed_keys, 10, '{}-{}'.format(team, dataset))
+
+        next_queue = None
+        try:
+            next_queue = sqs_config.get_stage_queue_name
+        except sqs_config._ssm.exceptions.ParameterNotFound:
+            logger.info("Next stage either does not exist or does not have an associated SQS queue.")
+
+        if next_queue:
+            sqs_interface = SQSInterface(next_queue)
+            sqs_interface.send_batch_messages_to_fifo_queue(
+                processed_keys, 10, '{}-{}'.format(team, dataset))
 
         octagon_client.update_pipeline_execution(status="{} {} Processing".format(stage, component),
                                                  component=component)

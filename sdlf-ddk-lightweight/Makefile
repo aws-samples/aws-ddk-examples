@@ -3,6 +3,7 @@ CICD=default
 CHILD=default
 REGION=$(shell aws configure get region --profile ${CICD})
 ENV=dev
+CHILD_STACKS=$(shell cdk list --notices=false | grep "SDLF-DDK-${ENV}/" | tr '\n' ' ')
 
 
 .PHONY: empty_buckets delete_sdlf delete_bootstrap delete_repositories delete_all_items
@@ -19,14 +20,14 @@ help:
 
 
 delete_repositories:
-	./scripts/cleanup_scripts/delete_repositories.sh -s ${CICD} -t ${CHILD} -r ${REGION} -d sdlf-ddk-example
+	./scripts/cleanup_scripts/delete_repositories.sh -s ${CICD} -t ${CHILD} -r ${REGION} -d sdlf-ddk-streaming
 
 empty_buckets:	
 	pushd scripts/cleanup_scripts; python3 ./list_items_to_delete.py ${ENV} ${CHILD}; popd;
 	pushd scripts/cleanup_scripts; python3 ./empty_buckets.py ${CHILD}; popd;
 	
 delete_sdlf:
-	cdk destroy SDLF-DDK-${ENV}/sdlf-data-lake-pipeline --force --profile ${CHILD};
+	cdk destroy ${CHILD_STACKS} --force --profile ${CHILD}
 
 	cdk destroy sdlf-ddk-pipeline --force --profile ${CICD}
 	

@@ -41,6 +41,7 @@ def lambda_handler(event, context):
         pipeline = event['body']['pipeline']
         stage = event['body']['pipeline_stage']
         dataset = event['body']['dataset']
+        database_name = event['body']['database_name']
 
         logger.info('Initializing Octagon client')
         component = context.function_name.split('-')[-2].title()
@@ -60,7 +61,7 @@ def lambda_handler(event, context):
         logger.info('Calling user custom processing code')
         transform_handler = TransformHandler().stage_transform(team, dataset, stage)
         response = transform_handler().transform_object(
-            bucket, keys_to_process, team, dataset)  # custom user code called
+            bucket, keys_to_process, team, dataset, database_name)  # custom user code called
         response['peh_id'] = peh_id
         octagon_client.update_pipeline_execution(
             status="{} {} Processing".format(stage, component), component=component)
