@@ -16,7 +16,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Protocol, Dict
 
 import aws_cdk.aws_lambda as lmbda
 from aws_ddk_core.base import BaseStack
@@ -31,7 +31,7 @@ class SDLFPipeline(Protocol):
 
     PIPELINE_TYPE: str
 
-    def register_dataset(self, dataset: str, config: dict[str, Any]):
+    def register_dataset(self, dataset: str, config: Dict[str, Any]):
         ...
 
 
@@ -42,7 +42,7 @@ class SDLFBaseStack(BaseStack):
         construct_id: str,
         environment_id: str,
         resource_prefix: str,
-        params: dict[str, Any],
+        params: Dict[str, Any],
         **kwargs: Any
     ) -> None:
         self._environment_id: str = environment_id
@@ -77,7 +77,7 @@ class SDLFBaseStack(BaseStack):
         )
 
         dataset_names: set[str] = set()
-        pipelines: dict[str, SDLFPipeline] = {}
+        pipelines: Dict[str, SDLFPipeline] = {}
         # loop through values in parameters.json and create the necessary resources for each pipeline
         for customer_config in customer_configs:
             dataset = customer_config["dataset"]

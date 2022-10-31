@@ -1,6 +1,6 @@
 # DDK Serverless Data Lake Framework
 
-This code base is a platform that leverages the [Serverless Data Lake Framework](https://github.com/awslabs/aws-serverless-data-lake-framework/) (SDLF) and [AWS DataOps Development Kit](https://awslabs.github.io/aws-ddk/) (DDK) to accelerate the delivery of enterprise data lakes on AWS.
+This codebase is a platform that leverages the [Serverless Data Lake Framework](https://github.com/awslabs/aws-serverless-data-lake-framework/) (SDLF) and [AWS DataOps Development Kit](https://awslabs.github.io/aws-ddk/) (DDK) to accelerate the delivery of enterprise data lakes on AWS.
 
 <br />
 
@@ -24,7 +24,7 @@ The Purpose of the DDK Serverless Data Lake Framework is to shorten the deployme
 
 ## Reference Architecture
 
-The reference code in this code base provides two pipelines to illustrate how teams can author and use new pipelines. The first pipeline is the `StandardPipeline` whose architecture can be seen below. The default values in `parameters.json` deploys a single instance of this pipeline with one team (`"demoteam"`) and one dataset (`"legislators"`).
+The reference code in this codebase provides two pipelines to illustrate how teams can author and use new pipelines. The first pipeline is the `StandardPipeline` whose architecture can be seen below. The default values in `parameters.json` deploys a single instance of this pipeline with one team (`"demoteam"`) and one dataset (`"legislators"`).
 
 ![Alt](docs/images/StandardEndToEnd.png)
 
@@ -46,7 +46,7 @@ Finally, by adding additional records to the `parameters.json` file you can depl
 To complete this deployment, you'll need the following in your local environment
 
 Programmatic access to an AWS Account
-Python (version 3.9 or above) and its package manager, pip (version 9.0.3 or above), are required
+Python (version 3.8 or above) and its package manager, pip (version 9.0.3 or above), are required
 
 ```
 $ python --version
@@ -404,7 +404,7 @@ If you want to provide different step machines that what is provided out of the 
 
     - You should define the base, shared (across datasets) infrastructure of the pipeline in it's `__init__(...)` method.
     
-    - Each pipeline must implement the `SDLFPipeline` protocol defined in `pipelines/sdlf_base_stack.py`. Specifically, it must provide a `register_dataset(self, dataset: str, config: dict[str, Any])` function which creates any infrastructure specific to each dataset and registers the dataset to the pipeline (such as creating EventBridge rules for new data arriving in S3 for that dataset). It must also include a `PIPELINE_TYPE` class variable that defines the value used in `parameters.json` to register a dataset to that pipeline.
+    - Each pipeline must implement the `SDLFPipeline` protocol defined in `pipelines/sdlf_base_stack.py`. Specifically, it must provide a `register_dataset(self, dataset: str, config: Dict[str, Any])` function which creates any infrastructure specific to each dataset and registers the dataset to the pipeline (such as creating EventBridge rules for new data arriving in S3 for that dataset). It must also include a `PIPELINE_TYPE` class variable that defines the value used in `parameters.json` to register a dataset to that pipeline.
 
     - As seen in `standard_pipeline.py` link the custom stages in your Data Pipeline using the DDK `DataPipeline` class as shown below:
 

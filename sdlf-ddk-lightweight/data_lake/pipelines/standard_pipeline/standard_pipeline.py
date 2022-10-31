@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
+from typing import Any, Dict
 import copy
 
 import aws_cdk as cdk
@@ -247,7 +247,7 @@ class StandardPipeline(BaseStack):
     def routing_b(self, routing_lambda: lmbda.IFunction):
         self._routing_b = routing_lambda
 
-    def register_dataset(self, dataset: str, config: dict[str, Any]):
+    def register_dataset(self, dataset: str, config: Dict[str, Any]):
         # Create dataset stack
         stage_a_transform = config.get("stage_a_transform", "sdlf_light_transform")
         stage_b_transform = config.get("stage_b_transform", "sdlf_heavy_transform")

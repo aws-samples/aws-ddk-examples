@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from typing import Any, Tuple
+from typing import Any, Tuple, Dict
 
 import aws_cdk as cdk
 import wrapt
@@ -30,7 +30,7 @@ def build(
     wrapped: Any,  # pylint: disable=unused-argument
     self: CICDPipelineStack,
     args: Tuple[Any, ...],  # pylint: disable=unused-argument
-    kwargs: dict[str, Any]
+    kwargs: Dict[str, Any]
 ) -> "CICDPipelineStack":
     """
     This is a temporary workaround to expose the publish_assets_in_parallel parameter
@@ -62,7 +62,7 @@ class DataLakeFramework(cdk.Stage):
     def __init__(
         self,
         scope: Construct,
-        pipeline_params: dict[str, Any],
+        pipeline_params: Dict[str, Any],
         environment_id: str,
         **kwargs: Any,
     ) -> None:
