@@ -135,9 +135,15 @@ class FileStandardizationPipelineStack(BaseStack):
             role_name=crawler_role_name,
             assumed_by=ServicePrincipal('glue.amazonaws.com'),
             managed_policies=[
-                ManagedPolicy.from_aws_managed_policy_name('service-role/AWSGlueServiceRole'),
-                ManagedPolicy.from_aws_managed_policy_name('AmazonS3FullAccess')
-                ]
+                ManagedPolicy.from_aws_managed_policy_name('service-role/AWSGlueServiceRole')
+                ],
+        )
+
+        glue_crawler_role.add_to_policy(
+            PolicyStatement(
+                actions=["s3:GetObject","s3:PutObject"],
+                resources=[f"{self._ddk_bucket.bucket_arn}/output/*"],
+            )
         )
 
         glue_transform_stage = GlueTransformStage(
