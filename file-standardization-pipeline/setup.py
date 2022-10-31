@@ -6,7 +6,7 @@ with open("README.md") as fp:
 
 setuptools.setup(
     name="ddk-pattern",
-    version="0.3.1",
+    version="0.6.0",
     description="An empty DDK Python app",
     long_description=long_description,
     long_description_content_type="text/markdown",

@@ -3,7 +3,7 @@
 CURR_DIR=$(pwd)
 
 S3_BUCKET_NAME=$1
-AWS_PROFILE=$2 # the aws profile you are using (ie "sandbox" or "burner")
+AWS_PROFILE=${2:-default} # the aws profile you are using (ie "sandbox" or "burner")
 
 
 echo "Copying input data files to S3.."
