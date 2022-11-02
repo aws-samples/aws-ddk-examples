@@ -104,8 +104,6 @@ class SDLFLightTransform(StateMachineStage):
 
         self._create_state_machine(preupdate_task, process_task, postupdate_task, error_task)
 
-        self._state_machine.grant_start_execution(self._lambda_role)
-
     def _create_state_machine(
         self,
         preupdate_task: tasks.LambdaInvoke,
@@ -248,6 +246,15 @@ class SDLFLightTransform(StateMachineStage):
                             "sqs:ListQueueTags"
                         ],
                         resources=[f"arn:aws:sqs:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:{self._prefix}-{self.team}-*"],
+                    ),
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
+                        actions=[
+                            "states:StartExecution"
+                        ],
+                        resources=[
+                            f"arn:aws:states:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:stateMachine:{self._prefix}*"
+                        ],
                     )
                 ]
             ),

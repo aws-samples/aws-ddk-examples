@@ -86,8 +86,6 @@ class SDLFHeavyTransform(StateMachineStage):
         # build state machine
         self._create_state_machine(process_task, postupdate_task, error_task, check_job_task)
 
-        self._state_machine.grant_start_execution(self._lambda_role)
-
     def _create_state_machine(
         self,
         process_task: tasks.LambdaInvoke,
@@ -265,6 +263,15 @@ class SDLFHeavyTransform(StateMachineStage):
                             "sqs:ListQueueTags"
                         ],
                         resources=[f"arn:aws:sqs:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:{self._prefix}-{self.team}-*"],
+                    ),
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
+                        actions=[
+                            "states:StartExecution"
+                        ],
+                        resources=[
+                            f"arn:aws:states:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:stateMachine:{self._prefix}*"
+                        ],
                     )
                 ]
             ),
