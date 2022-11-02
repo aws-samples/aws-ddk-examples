@@ -57,7 +57,6 @@ class StandardDatasetStack(BaseStack):
     ) -> None:
         self._dataset_config: StandardDatasetConfig = config
         self._resource_prefix = resource_prefix
-        self._environment_id: str = environment_id
         self._team = self._dataset_config.team
         self._pipeline = self._dataset_config.pipeline
         self._dataset = self._dataset_config.dataset
@@ -66,7 +65,7 @@ class StandardDatasetStack(BaseStack):
             construct_id,
             environment_id,
             stack_name=f"{self._resource_prefix}-StandardDataset-{self._team}"
-                       + f"-{self._dataset}-{self._environment_id}",
+                       + f"-{self._dataset}-{environment_id}",
             **kwargs
         )
 

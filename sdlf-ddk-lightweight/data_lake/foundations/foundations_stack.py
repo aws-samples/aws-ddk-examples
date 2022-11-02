@@ -45,13 +45,12 @@ class FoundationsStack(BaseStack):
         runtime: lmbda.Runtime,
         **kwargs: Any,
     ) -> None:
-        self._environment_id: str = environment_id
         self._resource_prefix = resource_prefix
         super().__init__(
             scope,
             construct_id,
             environment_id,
-            stack_name=f"{self._resource_prefix}-FoundationsStack-{self._environment_id}",
+            stack_name=f"{self._resource_prefix}-FoundationsStack-{environment_id}",
             **kwargs
         )
 

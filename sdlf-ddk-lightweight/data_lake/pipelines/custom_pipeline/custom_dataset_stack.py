@@ -42,7 +42,6 @@ class CustomDatasetStack(BaseStack):
         **kwargs: Any
     ) -> None:
         self._dataset_config: CustomDatasetConfig = config
-        self._environment_id: str = environment_id
         self._team = self._dataset_config.team
         self._pipeline = self._dataset_config.pipeline
         self._dataset = self._dataset_config.dataset
@@ -52,7 +51,7 @@ class CustomDatasetStack(BaseStack):
             construct_id,
             environment_id,
             stack_name=f"{self._resource_prefix}-CustomDataset-{self._team}"
-                       + f"-{self._dataset}-{self._environment_id}",
+                       + f"-{self._dataset}-{environment_id}",
             **kwargs
         )
 

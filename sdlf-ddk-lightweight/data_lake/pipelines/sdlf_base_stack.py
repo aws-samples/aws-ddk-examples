@@ -45,13 +45,12 @@ class SDLFBaseStack(BaseStack):
         params: Dict[str, Any],
         **kwargs: Any
     ) -> None:
-        self._environment_id: str = environment_id
         self._resource_prefix = resource_prefix
         super().__init__(
             scope,
             construct_id,
             environment_id,
-            stack_name=f"{self._resource_prefix}-SDLFPipelineStack-{self._environment_id}",
+            stack_name=f"{self._resource_prefix}-SDLFPipelineStack-{environment_id}",
             **kwargs
         )
         self._params = params

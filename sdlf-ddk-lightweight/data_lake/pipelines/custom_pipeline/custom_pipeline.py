@@ -47,14 +47,13 @@ class CustomPipeline(BaseStack):
         runtime: lmbda.Runtime,
         **kwargs: Any
     ) -> None:
-        self._environment_id: str = environment_id
         self._team = team
         self._resource_prefix = resource_prefix
         super().__init__(
             scope,
             construct_id,
             environment_id,
-            stack_name=f"{self._resource_prefix}-CustomPipeline-{self._team}-{self._environment_id}",
+            stack_name=f"{self._resource_prefix}-CustomPipeline-{self._team}-{environment_id}",
             **kwargs
         )
         self._pipeline_id = f"{self._resource_prefix}-{self._team}-{self.PIPELINE_TYPE}"
