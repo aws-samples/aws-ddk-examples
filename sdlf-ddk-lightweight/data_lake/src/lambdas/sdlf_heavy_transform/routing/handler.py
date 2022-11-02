@@ -24,6 +24,7 @@ from datalake_library.interfaces.dynamo_interface import DynamoInterface
 from datalake_library.interfaces.sqs_interface import SQSInterface
 from datalake_library.interfaces.states_interface import StatesInterface
 
+
 logger = init_logger(__name__)
 
 
@@ -42,6 +43,7 @@ def lambda_handler(event, context):
         org = event['org']
         app = event['app']
         env = event['env']
+        database_name = event['database_name']
         stage_bucket = S3Configuration().stage_bucket
         dynamo_config = DynamoConfiguration()
         dynamo_interface = DynamoInterface(dynamo_config)
@@ -79,7 +81,7 @@ def lambda_handler(event, context):
                 "org": org,
                 "app": app,
                 "env": env,
-                "crawler_name": event["crawler_name"]
+                "database_name": database_name
             }
         }
         logger.info('Starting State Machine Execution')

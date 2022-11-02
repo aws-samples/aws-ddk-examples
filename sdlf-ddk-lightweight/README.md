@@ -1,6 +1,6 @@
 # DDK Serverless Data Lake Framework
 
-This code base is a platform that leverages the [Serverless Data Lake Framework](https://github.com/awslabs/aws-serverless-data-lake-framework/) (SDLF) and [AWS DataOps Development Kit](https://awslabs.github.io/aws-ddk/) (DDK) to accelerate the delivery of enterprise data lakes on AWS.
+This codebase is a platform that leverages the [Serverless Data Lake Framework](https://github.com/awslabs/aws-serverless-data-lake-framework/) (SDLF) and [AWS DataOps Development Kit](https://awslabs.github.io/aws-ddk/) (DDK) to accelerate the delivery of enterprise data lakes on AWS.
 
 <br />
 
@@ -24,7 +24,17 @@ The Purpose of the DDK Serverless Data Lake Framework is to shorten the deployme
 
 ## Reference Architecture
 
-![Alt](./docs/images/SDLF-Data-Lake-DDK.png)
+The reference code in this codebase provides two pipelines to illustrate how teams can author and use new pipelines. The first pipeline is the `StandardPipeline` whose architecture can be seen below. The default values in `parameters.json` deploys a single instance of this pipeline with one team (`"demoteam"`) and one dataset (`"legislators"`).
+
+![Alt](docs/images/StandardEndToEnd.png)
+
+In addition, we define a `CustomPipeline` which is just the stage A of the `StandardPipeline`. This pipeline serves to demonstrate how teams can author custom pipelines an include them in the framework. See the [Adding New Pipelines](#adding-new-pipelines) section below for more details.
+
+![Alt](docs/images/CustomEndToEnd.png)
+
+Finally, by adding additional records to the `parameters.json` file you can deploy multiple datasets for multiple teams with multiple pipelines. An example of what this architecture might look like is shown below.
+
+![Alt](docs/images/MultiTeamDeployment.png)
 
 <br />
 <br />
@@ -36,7 +46,7 @@ The Purpose of the DDK Serverless Data Lake Framework is to shorten the deployme
 To complete this deployment, you'll need the following in your local environment
 
 Programmatic access to an AWS Account
-Python (version 3.7 or above) and its package manager, pip (version 9.0.3 or above), are required
+Python (version 3.8 or above) and its package manager, pip (version 9.0.3 or above), are required
 
 ```
 $ python --version
@@ -100,7 +110,7 @@ The following AWS services are required for this utility:
 
 <br />
 
-At this time, the file in unzipped and you are in the directory. You will follow a set of commands depicted in the diagram below to configure and deploy SDLF using DDK.
+At this time, the file is unzipped and you are in the directory. You will follow a set of commands depicted in the diagram below to configure and deploy SDLF using DDK.
 
 Continue to the steps below to set up DDK:
 
@@ -144,7 +154,7 @@ $ ddk bootstrap --profile [AWS_PROFILE] -e cicd
 
 ```
 $ ddk bootstrap --help
-$ ddk bootstrap --profile [AWS_PROFILE] -e dev
+$ ddk bootstrap --profile [AWS_PROFILE] -e dev -a [CICD_ACCOUNT]
 ```
 
 <br />
@@ -191,7 +201,7 @@ Additionally, edit the `parameters.json` file under the path `data_lake/pipeline
 4. `stage_a_transform` - Name of the python file containing light transform code.
 5. `stage_b_transform` - Name of the python file containing heavy transform code.
 
-If the parameters are not filled, default values for team, pipeline, dataset, stage_a_transform, and stage_b_transform will be used (i.e. demoteam, gsp, legislators, sdlf_light_transform, and sdlf_heavy_transform).
+If the parameters are not filled, default values for team, pipeline, dataset, stage_a_transform, and stage_b_transform will be used (see Reference Architecture section above).
 
 <br />
 <br />
@@ -238,6 +248,8 @@ $ ddk deploy --profile [AWS_PROFILE]
 
 The deploy all step deploys an AWS CICD CodePipeline along with its respective AWS CloudFormation Stacks. The last stage of each pipeline delivers the SDLF Data Lake infrastructure respectively in the child (default dev) environment through CDK/CloudFormation.
 
+_Note: when you do the initial deployment in a brand new account, you may encounter some transient errors in CodePipeline or CodeBuild as it may take some time (typically a couple of hours) for AWS to provision your capacity in those services. If this happens you can wait some time and click the Retry button on CodePipeline to retry a failed stage._
+
 <br />
 <br />
 
@@ -253,6 +265,7 @@ Examples of datasets are:
 - A group of files from a data source (E.g. XML files from a Telemetry system)
 - A streaming data source (E.g. Kinesis data stream batching files and dumping them into S3)
 
+For this QuickStart, a Glue database alongside Lake Formation permissions are created for each dataset. However, this will depend on the use case with the requirements for unstructured data or for a streaming data source likely to be different. The structure of the dataset, and what infrastructure is deployed with it, depend on the pipeline it belongs to.
 
 <br />
 <br />
@@ -261,7 +274,7 @@ Examples of datasets are:
 
 <br />
 
-A data pipelines can be thought of as a logical constructs representing an ETL process that moves and transforms data from one area of the lake to another. The stages directory is where the blueprint for a data pipeline stage is defined by data engineers. For instance, the definition for a step function stage orchestrating a Glue job and updating metadata is abstracted in the `sdlf_heavy_transform.py` file. This definition is not specific to a particular job or crawler, instead the Glue job name is passed as an input to the stage. Such a configuration promotes the reusability of stages across multiple data pipelines.
+A data pipeline can be thought of as a logical construct representing an ETL process that moves and transforms data from one area of the lake to another. The pipelines directory is where the blueprints for the data pipelines, their stages, and their datasets are defined by data engineers. In addition, generic stages to be used across multiple pipelines can be defined in the pipelines/common_stages directory. For instance, the definition for a step function stage orchestrating a Glue job and updating metadata is abstracted in the `sdlf_heavy_transform.py` file within the common_stages directory. This definition is not specific to a particular job or crawler, instead the Glue job name is passed as an input to the stage. Such a configuration promotes the reusability of stages across multiple data pipelines.
 
 In the pipelines directory, these stage blueprints are instantiated and wired together to create a data pipeline. Borrowing an analogy from object-oriented programming, blueprints defined in the stages directory are “classes”, while in the pipelines directory these become “object instances” of the class.
 
@@ -274,7 +287,7 @@ In the pipelines directory, these stage blueprints are instantiated and wired to
 
 - If you are using this in a burner account or for demos, you can use the demo data and default `data_lake_parameters` in `ddk.json` to test the data lake functionality.
 
-- Before you execute the below command, make sure to go into copy.sh and provide the necessary details for the variables such as `BUCKET_NAME`, `PROFILE` and `REGION`. Once executed it will put the data in respective s3 bucket and start data lake processing. You can update the file to also copy other sample data
+- Before you execute the below command, make sure to go into copy.sh and provide the necessary details for the variables such as `BUCKET_NAME`, `PROFILE` and `REGION`. Once executed it will put the data in respective s3 bucket and start data lake processing. You can update the file to also copy other sample data, or change the `DATASET` and `TEAM` parameters to test multiple pipelines.
 
 ```
 $ sh ./examples/copy.sh
@@ -295,14 +308,14 @@ $ sh ./examples/copy.sh
     "dev": [
         {
             "team": "demoteam",
-            "pipeline": "gsp",
+            "pipeline": "standard",
             "dataset": "legislators",
             "stage_a_transform": "sdlf_light_transform",
             "stage_b_transform": "sdlf_heavy_transform"
         },
         {
             "team": "demoteam",
-            "pipeline": "gsp",
+            "pipeline": "standard",
             "dataset": "newdata",
             "stage_a_transform": "sdlf_light_transform_new",
             "stage_b_transform": "sdlf_heavy_transform_new"
@@ -335,7 +348,7 @@ NOTE: The `TEAM_NAME` and `DATASET_NAME` as part of the file path should match t
 <br />
 
 
-## Adding New Pipelines with Custom Step Functions
+## Adding New Pipelines
 
 <br />
 
@@ -348,7 +361,7 @@ If you want to provide different step machines that what is provided out of the 
     "dev": [
         {
             "team": "demoteam",
-            "pipeline": "gsp",
+            "pipeline": "standard",
             "dataset": "legislators",
             "stage_a_transform": "sdlf_light_transform",
             "stage_b_transform": "sdlf_heavy_transform"
@@ -364,13 +377,15 @@ If you want to provide different step machines that what is provided out of the 
 } 
 ```
 
-2. Follow the steps for adding a **Adding New Datasets with Custom Transformations in the Same Pipeline** above for the new dataset specified in the `parameters.json` (Ensure that the `dataset` name does NOT exist in other pipelines).
+2. Follow the steps for adding a **Adding New Datasets with Custom Transformations in the Same Pipeline** above for the new dataset specified in the `parameters.json` (Ensure that the `dataset` name does NOT exist in other pipelines for the same team).
 
 3. Adding new Custom Stage to a Pipeline
 
 - Determine what the new pipeline must look like and if you can re-use existing stages or require new custom stages.
 
-- If required to have custom stages, create new files in the stages folder with the custom stages you wish to have for your data processing pipeline by using the default `data_lake/stages/sdlf_light_transform.py` and `data_lake/stages/sdlf_heavy_transform.py` files as reference.
+- Add a folder to the pipelines directory for your custom pipeline, e.g. "pipelines/main_pipeline/".
+
+- If required to have custom stages, create new files in the folder for your pipeline with the custom stages you wish to have for your data processing pipeline by using the default `data_lake/pipelines/common_stages/sdlf_light_transform.py` and `data_lake/pipelines/common_stages/sdlf_heavy_transform.py` files as reference.
 
     - The default stages `sdlf_light_transform.py` and `sdlf_heavy_transform.py` include lambdas, queues and step function definitions for your pipeline written as CDK and DDK Constructs
 
@@ -381,78 +396,58 @@ If you want to provide different step machines that what is provided out of the 
         return [LambdaFunction(self._lambda)]
     ```
 
-- Add the stages in the `__init__.py` file in the `data_lake/stages/` directory.
+- Add the stages in the `__init__.py` file of your custom pipeline directory.
 
 4. Creating a new Custom Pipeline
 
-- Once your custom CDK Stage is developed, create a new pipeline by updating the `data_lake/pipelines/sdlf_pipeline_stack.py` similar to the following:
+- Add Python files to define both your pipeline and it's associated dataset to your custom pipeline directory. You can use the `pipelines/standard_pipeline/standard_pipeline.py` and `pipelines/standard_pipeline/standard_dataset.py` as examples.
 
-    - Change the code block in the `sdlf_pipeline_stack.py` file to the below with your specified `PIPELINE_NAME` and edit the custom function to create your new pipeline
-
-```
-for customer_config in customer_configs:
-    ... 
-    #PIPELINE CREATION
-    if f"{team}-{pipeline}" not in pipeline_names:
-        pipeline_names.append(f"{team}-{pipeline}")
-        if pipeline != "gsp":
-            #HANDLE NEW PIPELINE DEFINITION
-            self._create_custom_pipeline()
-        else:
-            self._create_sdlf_pipeline(self._resource_prefix, team, pipeline, dataset)
-
-        ...
-```
-
-- In your custom function, use `self._create_sdlf_pipeline(self._resource_prefix, team, pipeline, dataset)` as a reference and define your custom stages in a similar way
-
-```
-from ..stages import (
-    CustomLightTransform,
-    CustomLightTransformConfig
-    ...
-)
-
-class SDLFPipelineStack(BaseStack):
+    - You should define the base, shared (across datasets) infrastructure of the pipeline in it's `__init__(...)` method.
     
-    ...
+    - Each pipeline must implement the `SDLFPipeline` protocol defined in `pipelines/sdlf_base_stack.py`. Specifically, it must provide a `register_dataset(self, dataset: str, config: Dict[str, Any])` function which creates any infrastructure specific to each dataset and registers the dataset to the pipeline (such as creating EventBridge rules for new data arriving in S3 for that dataset). It must also include a `PIPELINE_TYPE` class variable that defines the value used in `parameters.json` to register a dataset to that pipeline.
 
-    def _create_custom_pipeline(resource_prefix, team, pipeline, dataset):
+    - As seen in `standard_pipeline.py` link the custom stages in your Data Pipeline using the DDK `DataPipeline` class as shown below:
 
-        custom_data_lake_light_transform = CustomLightTransform(
-            self,
-            id=f"{pipeline_id}-stage-a",
-            name=f"{team}-{pipeline}-stage-a",
-            environment_id=self._environment_id,
-            ...
-            config=CustomLightTransformConfig(
-                team = team
-                pipeline = pipeline
-                ...
-            )
-        )
-
-
-
-```
-
-- As shown below link the custom stages in your custom Data Pipeline that you define as part of the above step:
-
-```
-      self._custom_data_lake_pipeline: DataPipeline = (
-            DataPipeline(
-                self,
-                id=pipeline_id,
-                name=f"{pipeline_id}-pipeline",
-                description=f"{self._resource_prefix} data lake pipeline",
-            )
-            .add_stage(data_lake_s3_event_capture_stage)
-            .add_stage(custom_data_lake_light_transform)
-            .add_stage(custom_data_lake_heavy_transform, skip_rule=True)
-        )
+```py
+self._data_lake_pipeline: DataPipeline = (
+    DataPipeline(
+        self,
+        id=self._pipeline_id,
+        name=f"{self._resource_prefix}-DataPipeline-{self._team}-{self.PIPELINE_TYPE}-{self._environment_id}",
+        description=f"{self._resource_prefix} data lake pipeline",
+    )
+    .add_stage(self._s3_event_capture_stage)  # type: ignore
+    .add_stage(self._data_lake_light_transform, skip_rule=True)  # configure rule on register_dataset() call
+    .add_stage(data_lake_heavy_transform, skip_rule=True)
+)
 ```
 
 _NOTE: You can leverage AWS DDK’s built-in S3 Event Stage to set up event-driven architectures and trigger your data processing pipelines_
+
+- Once you have defined your pipeline and stages, allow teams to use the pipeline by updating the `data_lake/pipelines/sdlf_base_stack.py` similar to the following:
+
+    - Change the code block in the `sdlf_base_stack.py` file to check the `customer_config` for your custom `pipeline_type` and create the pipeline as seen below:
+
+```py
+for customer_config in customer_configs:
+    ...
+        if pipeline_type == StandardPipeline.PIPELINE_TYPE:
+            pipeline = StandardPipeline(
+                self,
+                construct_id=f"{team}-{pipeline_type}",
+                environment_id=self._environment_id,
+                resource_prefix=self._resource_prefix,
+                team=team,
+                foundations_stage=self._foundations_stage,
+                wrangler_layer=self._wrangler_layer,
+                app=self._app,
+                org=self._org,
+                runtime=lmbda.Runtime.PYTHON_3_9
+            )
+        elif pipeline_type == YourCustomPipeline.PIPELINE_TYPE:
+            pipeline = YourCustomPipeline(...)  # Create Pipeline
+    ...
+```
 
 5. Push your code to the remote CodeCommit repository and the DDK SDLF Data Lake will automatically create new resources for your additional pipeline.
 

@@ -16,6 +16,7 @@
 import logging
 import os
 from typing import Any, Dict, Optional, Union
+import json
 
 import boto3
 from botocore.exceptions import ClientError
@@ -81,18 +82,11 @@ def on_delete(event: Dict[str, Any], table_name: str, props: Dict[str, Any]) -> 
 def on_event(event: Dict[str, Any], context: Optional[Dict[str, Any]]) -> Dict[str, str]:
     _logger.info(f"Received event: {event}")
     request_type = event["RequestType"]
-    props = event["ResourceProperties"]["RegisterProperties"]
+    props = json.loads(event["ResourceProperties"]["RegisterProperties"])
+    _logger.info(f"props to register: {props}")
     table_name = os.environ[f"{props['type'].upper()}_TABLE_NAME"]
     del props["type"]
 
-    if("octagon" in table_name):
-        props['version'] = int(props['version'])
-        if("Datasets" in table_name):
-            props['min_items_process']['stage_c'] = int(props['min_items_process']['stage_c'])
-            props['min_items_process']['stage_b'] = int(props['min_items_process']['stage_b'])
-            props['max_items_process']['stage_c'] = int(props['max_items_process']['stage_c'])
-            props['max_items_process']['stage_b'] = int(props['max_items_process']['stage_b'])
-            
     if request_type == "Create":
         return on_create(event=event, table_name=table_name, props=props)
     elif request_type == "Update":

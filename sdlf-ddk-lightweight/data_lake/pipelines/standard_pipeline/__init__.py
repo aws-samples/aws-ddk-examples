@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .sdlf_base_stack import SDLFBaseStack, SDLFPipeline
 
+from .standard_dataset_stack import StandardDatasetConfig, StandardDatasetStack
+from .standard_pipeline import StandardPipeline
 
 __all__ = [
-    "SDLFBaseStack",
-    "SDLFPipeline"
+    "StandardDatasetConfig",
+    "StandardDatasetStack",
+    "StandardPipeline",
 ]
