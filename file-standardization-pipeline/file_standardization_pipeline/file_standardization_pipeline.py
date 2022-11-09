@@ -185,7 +185,8 @@ class FileStandardizationPipelineStack(BaseStack):
             id="lambda_to_sqs_stage",
             environment_id=self._environment_id,
             code=lambda_code.from_asset("./file_standardization_pipeline/src/invoke_step_function"), 
-            handler="handler.lambda_handler"
+            handler="handler.lambda_handler",
+            batch_size=1
         )
 
         sqs_to_lambda_stage.function.add_environment("STEPFUNCTION", self._glue_transform_stage.state_machine.state_machine_arn)
