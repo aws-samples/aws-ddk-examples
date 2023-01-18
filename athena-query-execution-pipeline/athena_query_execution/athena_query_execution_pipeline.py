@@ -2,24 +2,37 @@ import json
 import os
 from pathlib import Path
 from typing import Any
-import aws_cdk as cdk
-from aws_cdk import Duration
+
 from aws_cdk.aws_events import Rule, RuleTargetInput, Schedule
 from aws_cdk.aws_events_targets import SfnStateMachine
 from aws_cdk.aws_glue import CfnCrawler
-from aws_cdk.aws_glue_alpha import (Code, Database, GlueVersion, JobExecutable,
-                                    JobLanguage, JobType)
-from aws_cdk.aws_iam import (Effect, ManagedPolicy, PolicyStatement, Role,
-                             ServicePrincipal)
+from aws_cdk.aws_glue_alpha import (
+    Code,
+    Database,
+    GlueVersion,
+    JobExecutable,
+    JobLanguage,
+    JobType,
+)
+from aws_cdk.aws_iam import (
+    Effect,
+    ManagedPolicy,
+    PolicyStatement,
+    Role,
+    ServicePrincipal,
+)
 from aws_cdk.aws_lambda import Code as lambda_code
-from aws_cdk.aws_lambda import LayerVersion
 from aws_cdk.aws_s3 import Bucket, BucketAccessControl
-from aws_cdk.aws_stepfunctions import CfnStateMachine, JsonPath
+from aws_cdk.aws_stepfunctions import JsonPath
 from aws_ddk_core.base import BaseStack
 from aws_ddk_core.pipelines import DataPipeline
 from aws_ddk_core.resources import S3Factory, pandas_sdk_layer
-from aws_ddk_core.stages import (AthenaSQLStage, GlueTransformStage,
-                                 S3EventStage, SqsToLambdaStage)
+from aws_ddk_core.stages import (
+    AthenaSQLStage,
+    GlueTransformStage,
+    S3EventStage,
+    SqsToLambdaStage,
+)
 from constructs import Construct
 
 
@@ -28,7 +41,7 @@ class AthenaQueryExecutionPipeline(BaseStack):
         self, scope: Construct, id: str, environment_id: str, **kwargs: Any
     ) -> None:
         super().__init__(scope, id, environment_id, **kwargs)
-    
+
         bucket = self._create_s3_bucket(environment_id=environment_id)
         database = self._create_database(database_name="athena_data")
         analytics_database = self._create_database(database_name="athena_analytics")
@@ -58,8 +71,8 @@ class AthenaQueryExecutionPipeline(BaseStack):
             handler="handler.lambda_handler",
             layers=[pandas_sdk_layer(self)],
         )
-        
 
+        
         bucket.grant_read_write(sqs_lambda_stage.function)
         sqs_lambda_stage.function.add_environment("DB", database.database_name)
         sqs_lambda_stage.function.add_to_role_policy(

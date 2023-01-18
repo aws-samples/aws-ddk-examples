@@ -1,6 +1,5 @@
 import json
 import os
-from datetime import datetime as dt
 
 import awswrangler as wr
 import boto3
@@ -23,19 +22,21 @@ def lambda_handler(event, context):
         raw_object = s3_client.get_object(Bucket=bucket_name, Key=object_key)
         raw_data = json.loads(raw_object["Body"].read().decode("utf-8"))
 
-        ## ADD your business logic here
-        ##--------------------------------------
+        # ADD your business logic here
+        # --------------------------------------
 
         df = pd.DataFrame(
             {
-                "minutes_worked": [60 * r["hours_worked"] for r in raw_data["sales_data"]],
+                "minutes_worked": [
+                    60 * r["hours_worked"] for r in raw_data["sales_data"]
+                ],
                 "quantity_sold": [r["quantity_sold"] for r in raw_data["sales_data"]],
                 "job_title": [r["job_title"] for r in raw_data["sales_data"]],
                 "sales_person": [r["sales_person"] for r in raw_data["sales_data"]],
             }
         )
 
-        ##----------------------------------------
+        # ----------------------------------------
 
         # Write parquet file to S3 and create metadata table
         wr.s3.to_parquet(
