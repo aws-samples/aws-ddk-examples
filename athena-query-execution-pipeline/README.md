@@ -7,26 +7,7 @@ This pattern deploys an automated data pipeline that handles multiple different 
 ## Architecture
 The instructions in this readme will help you deploy the following AWS architecture:
 
->![Screenshot](./docs/ddk_file_standardization_pipeline_architecture.png)
-
-
-Here is a high-level overview of each service's role:
-
-- S3 &rarr; Holds both the input and output data files (under separate S3 paths)
-
-- EventBridge &rarr; Triggers data pipeline when a file is uploaded to input S3 path
-
-- SQS &rarr; Queues the EventBridge events for the Lambda function
-
-- Lambda &rarr; Consumes SQS messages and triggers the StepFunction
-
-- StepFunction &rarr; Facilitates the Glue Job and the Glue Crawler execution
-
-- Glue Job &rarr; Loads input data and outputs the data to output S3 path in parquet format, using [AWS SDK for Pandas](https://aws-sdk-pandas.readthedocs.io/en/stable/)
-
-- Glue Crawler &rarr; Crawls the output S3 path and adds each dataset as a table to a Glue Database for future analytics
-
-<br />
+>![Screenshot](./docs/athena-query-execution-arch.png)
 
 Feel free to dive into the DDK file, Glue Script, and Lambda code if you want to learn more about the implementation details.
 
@@ -83,6 +64,12 @@ This is when the AWS DDK Core library is installed
 $ pip install -r requirements.txt --no-cache-dir
 ```
 
+If your default AWS region is not set then
+
+```
+export AWS_DEFAULT_REGION='<aws-region>'
+```
+
 ## DDK Bootstrapping
 
 In order to deploy DDK apps, you need to bootstrap your environment with the correct environment name.
@@ -117,11 +104,11 @@ Once the CloudFormation stack has been successfully created, your AWS account no
 
 To test the data pipeline, you will upload a file data.json to S3 using a shell command included in this repo. Within the "utils/data" prefix, the script will upload the data to a top-level prefix to identify the dataset.
 
-For example, the script will upload "data.json" to "s3://DDK_BUCKET_NAME/data/data.json"
+For example, the script will upload "data.json" to "s3://DDK_BUCKET_NAME/data/sales/data.json"
 
-If the data pipeline is successful, all of the datasets will be added to the "processed" prefix of the same S3 bucket in parquet format. Scheduled Event will trigger the AthenaSQL step function and run the predefined SQL query which will be stored in "query_output" after which GlueTranform will perform addition transformation on the query result data which will be cataloged in another glue db
+If the data pipeline is successful, all of the datasets will be added to the "processed" prefix of the same S3 bucket in parquet format. Scheduled Event will trigger the AthenaSQL Stage step function and run the predefined SQL query which will be stored in "query_output" prefix after which GlueTranform Stage step function will perform addition transformation on the query result data which will be cataloged in another glue db.
 
-For example, the "data.json" dataset should end up in "s3://DDK_BUCKET_NAME/processed/xyz.parquet". Also, the dataset should be added to the Glue Catalog under the "athena_data" Glue Database in a table named "sales".
+For example, the "data.json" dataset should end up in "s3://DDK_BUCKET_NAME/processed/sales/xyz.parquet". Also, the dataset should be added to the Glue Catalog under the "athena_data" Glue Database in a table named "sales". Further, the data will be stored under analytics prefix of the bucket after execution of glue transform stage.
 
 In the command below replace **S3_BUCKET_NAME** with the the name of the S3 bucket created by DDK. 
 Also, replace **AWS_PROFILE** with your profile name you have configured for your AWS CLI.
@@ -137,7 +124,7 @@ The above command will place files into S3, and should trigger the data pipeline
 
 ## Conclusion
 
-This pattern used the DDK to deploy an automated data pipeline that receives input data in various file formats, creates a parquet version of the file, and adds the parquet file to a Glue database for future analytics.
+This pattern used the DDK to deploy multiple automated data pipelines that go through various stages performing usecase based processing showcasing both event-driven and scheduled event patterns using Athena and other AWS analytics services.
 
 The code in this pattern is very generic, and can be extended to include any custom transformations/ data processing that you may need. 
 
