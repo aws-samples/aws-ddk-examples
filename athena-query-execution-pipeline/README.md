@@ -1,7 +1,7 @@
 # Serverless Athena Query Execution Data Pipeline
 
 ## Overview
-This pattern deploys an automated data pipeline that handles multiple different input file formats and creates a parquet version of the file, which is added to the Glue Catalog by a Glue Crawler. The code leverages the [AWS DataOps Development Kit (DDK)](https://awslabs.github.io/aws-ddk/) to deploy the infrastructure.
+This pattern deploys serverless data pipelines that handles Athena Query Execution of SQL queries as part of a step function pipeline on a scheduled event pattern which is followed by a glue transform using glue job and crawlers as part of a step function pipeline using a event driven pattern. The code leverages the [AWS DataOps Development Kit (DDK)](https://awslabs.github.io/aws-ddk/) to deploy the infrastructure.
 
 
 ## Architecture
@@ -87,6 +87,29 @@ Open the `ddk.json` file in the top-level directory of this repo.
 Edit the configuration file and enter your desired **AWS account number** and **AWS region** for the infrastructure to be deployed in.
 
 Be sure to save your changes to the file before proceeding!
+
+## Edit athena_query_execution/configs.json
+
+Update the json file with the following attributes. see below used as an example. 
+
+```
+{
+    "dev": [
+        {
+            "queryId": "query-id1",
+            "cronExpression": "cron(*/5 * * * ? *)",
+            "queryString": "SELECT minutes_worked, quantity_sold, job_title, sales_person FROM athena_data.sales where quantity_sold > 30 ",
+            "table": "sales"
+        },
+        {
+            "queryId": "query-id2",
+            "cronExpression": "cron(*/10 * * * ? *)",
+            "queryString": "SELECT job_title, sum(quantity_sold) as quantity_sold FROM athena_data.sales GROUP BY job_title ORDER BY quantity_sold DESC;",
+            "table": "sales"
+        }
+    ]
+}
+```
 
 ## Deploy the Data Pipeline
 
