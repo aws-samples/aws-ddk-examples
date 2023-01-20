@@ -92,21 +92,20 @@ Be sure to save your changes to the file before proceeding!
 
 Update the json file with the following attributes. see below used as an example. 
 
+The **queryId** should be unique and represent something that would be understandable for simplicity For e.g if the queryString is a query for join between sales and employee tables doing some transformation on those 2 tables. The queryId could be sales-employee-join-query-id-1
+
 ```
 {
     "dev": [
         {
-            "queryId": "query-id1",
+            "queryId": "sales-query-id1",
             "cronExpression": "cron(*/5 * * * ? *)",
             "queryString": "SELECT minutes_worked, quantity_sold, job_title, sales_person FROM athena_data.sales where quantity_sold > 30 ",
-            "table": "sales"
         },
         {
-            "queryId": "query-id2",
+            "queryId": "sales-query-id2",
             "cronExpression": "cron(*/10 * * * ? *)",
-            "queryString": "SELECT job_title, sum(quantity_sold) as quantity_sold FROM athena_data.sales GROUP BY job_title ORDER BY quantity_sold DESC;",
-            "table": "sales"
-        }
+            "queryString": "SELECT job_title, sum(quantity_sold) as quantity_sold FROM athena_data.sales GROUP BY job_title ORDER BY quantity_sold DESC;",        }
     ]
 }
 ```
