@@ -32,12 +32,10 @@ try:
 
     bucket = "/".join(input_s3_path.split("/")[0:3])
     print(bucket)
-    table = SFN_QUERY_INPUT.get("table")
-    print(table)
     queryid = SFN_QUERY_INPUT.get("queryId")
     queryid = queryid.replace("-", "_")
     print(queryid)
-    target_s3_path = f"{bucket}/analytics/{table}_{queryid}/{QueryExecution.get('QueryExecutionId')}.parquet"
+    target_s3_path = f"{bucket}/analytics/{queryid}/{QueryExecution.get('QueryExecutionId')}.parquet"
     print(target_s3_path)
 
     logger.info(f"writing data to the following S3 path: {target_s3_path}")
