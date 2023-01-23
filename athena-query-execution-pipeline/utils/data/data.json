@@ -1,0 +1,28 @@
+{
+  "sales_data": [
+      {
+          "sales_person": "John",
+          "job_title": "Senior Sales",
+          "quantity_sold": 100,
+          "hours_worked": 92
+      },
+      {
+          "sales_person": "Amanda",
+          "job_title": "VP of Sales",
+          "quantity_sold": 289,
+          "hours_worked": 106
+      },
+      {
+          "sales_person": "Jill",
+          "job_title": "Associate Sales",
+          "quantity_sold": 82,
+          "hours_worked": 40
+      },
+      {
+          "sales_person": "Matt",
+          "job_title": "Sales Intern",
+          "quantity_sold": 0,
+          "hours_worked": 24
+      }
+  ]
+}
