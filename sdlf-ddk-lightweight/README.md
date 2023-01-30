@@ -310,15 +310,19 @@ $ sh ./examples/copy.sh
             "team": "demoteam",
             "pipeline": "standard",
             "dataset": "legislators",
-            "stage_a_transform": "sdlf_light_transform",
-            "stage_b_transform": "sdlf_heavy_transform"
+            "config":{
+                "stage_a_transform": "sdlf_light_transform",
+                "stage_b_transform": "sdlf_heavy_transform"
+            }
         },
         {
             "team": "demoteam",
             "pipeline": "standard",
             "dataset": "newdata",
-            "stage_a_transform": "sdlf_light_transform_new",
-            "stage_b_transform": "sdlf_heavy_transform_new"
+            "config": {
+                "stage_a_transform": "sdlf_light_transform_new",
+                "stage_b_transform": "sdlf_heavy_transform_new"
+            }
         }
     ]
 }

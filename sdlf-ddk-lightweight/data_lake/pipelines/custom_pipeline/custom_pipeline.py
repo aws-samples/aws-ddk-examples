@@ -23,10 +23,19 @@ from aws_ddk_core.pipelines import DataPipeline
 from aws_ddk_core.resources import LambdaFactory
 from aws_ddk_core.stages import S3EventStage
 from constructs import Construct
+import aws_cdk.aws_ssm as ssm
+
 
 from ...foundations import FoundationsStack
 from ..common_stages import SDLFLightTransform, SDLFLightTransformConfig
 from .custom_dataset_stack import CustomDatasetConfig, CustomDatasetStack
+
+def get_ssm_value(scope, id: str, parameter_name: str) -> str:
+    return ssm.StringParameter.from_string_parameter_name(
+        scope,
+        id=id,
+        string_parameter_name=parameter_name,
+    ).string_value
 
 
 class CustomPipeline(BaseStack):
@@ -59,6 +68,17 @@ class CustomPipeline(BaseStack):
         self._pipeline_id = f"{self._resource_prefix}-{self._team}-{self.PIPELINE_TYPE}"
         self._wrangler_layer = wrangler_layer
         self._foundations_stage = foundations_stage
+        self._data_lake_library_layer_arn = get_ssm_value(
+                self,
+                "data-lake-library-layer-arn-ssm",
+                parameter_name="/SDLF/Layer/DataLakeLibrary",
+            )
+        
+        self._data_lake_library_layer = lmbda.LayerVersion.from_layer_version_arn(
+            self,
+            "data-lake-library-layer",
+            layer_version_arn=self._data_lake_library_layer_arn,
+        )
         self._app = app
         self._org = org
         self._runtime = runtime
@@ -94,7 +114,7 @@ class CustomPipeline(BaseStack):
                 stage_bucket=self._foundations_stage.stage_bucket,
                 stage_bucket_key=self._foundations_stage.stage_bucket_key,
                 routing_lambda=routing_function,
-                data_lake_lib=self._foundations_stage.data_lake_library,
+                data_lake_lib=self._data_lake_library_layer,
                 register_provider=self._foundations_stage.register_provider,
                 wrangler_layer=self._wrangler_layer,
                 runtime=lmbda.Runtime.PYTHON_3_9
