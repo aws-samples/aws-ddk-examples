@@ -16,8 +16,6 @@ from typing import Any, Dict
 import copy
 
 import aws_cdk as cdk
-import aws_cdk.aws_events as events
-import aws_cdk.aws_events_targets as targets
 import aws_cdk.aws_lambda as lmbda
 import aws_cdk.aws_iam as iam
 from aws_ddk_core.base import BaseStack
@@ -25,12 +23,20 @@ from aws_ddk_core.pipelines import DataPipeline
 from aws_ddk_core.stages import S3EventStage
 from aws_ddk_core.resources import LambdaFactory
 from constructs import Construct
+import aws_cdk.aws_ssm as ssm
+
 
 from ...foundations import FoundationsStack
 from ..common_stages import (SDLFHeavyTransform, SDLFHeavyTransformConfig)
 from ..common_stages import (SDLFLightTransform, SDLFLightTransformConfig)
 from .standard_dataset_stack import (StandardDatasetConfig, StandardDatasetStack)
 
+def get_ssm_value(scope, id: str, parameter_name: str) -> str:
+    return ssm.StringParameter.from_string_parameter_name(
+        scope,
+        id=id,
+        string_parameter_name=parameter_name,
+    ).string_value
 
 class StandardPipeline(BaseStack):
 
@@ -57,11 +63,22 @@ class StandardPipeline(BaseStack):
             construct_id,
             environment_id,
             stack_name=f"{self._resource_prefix}-StandardPipeline-{self._team}-{environment_id}",
-            **kwargs
+            **kwargs,
         )
         self._pipeline_id = f"{self._resource_prefix}-{self._team}-{self.PIPELINE_TYPE}"
         self._wrangler_layer = wrangler_layer
         self._foundations_stage = foundations_stage
+        self._data_lake_library_layer_arn = get_ssm_value(
+                self,
+                "data-lake-library-layer-arn-ssm",
+                parameter_name="/SDLF/Layer/DataLakeLibrary",
+            )
+        
+        self._data_lake_library_layer = lmbda.LayerVersion.from_layer_version_arn(
+            self,
+            "data-lake-library-layer",
+            layer_version_arn=self._data_lake_library_layer_arn,
+        )
         self._app = app
         self._org = org
         self._runtime = runtime
@@ -97,7 +114,7 @@ class StandardPipeline(BaseStack):
                 stage_bucket=self._foundations_stage.stage_bucket,
                 stage_bucket_key=self._foundations_stage.stage_bucket_key,
                 routing_lambda=routing_function,
-                data_lake_lib=self._foundations_stage.data_lake_library,
+                data_lake_lib=self._data_lake_library_layer,
                 register_provider=self._foundations_stage.register_provider,
                 wrangler_layer=self._wrangler_layer,
                 runtime=self._runtime
@@ -124,7 +141,7 @@ class StandardPipeline(BaseStack):
                 pipeline=self.PIPELINE_TYPE,
                 stage_bucket=self._foundations_stage.stage_bucket,
                 stage_bucket_key=self._foundations_stage.stage_bucket_key,
-                data_lake_lib=self._foundations_stage.data_lake_library,
+                data_lake_lib=self._data_lake_library_layer,
                 register_provider=self._foundations_stage.register_provider,
                 wrangler_layer=self._wrangler_layer,
                 runtime=self._runtime
@@ -253,7 +270,7 @@ class StandardPipeline(BaseStack):
         app = config.get("app", "datalake")
         org = config.get("org", "aws")
 
-        dataset_stack = StandardDatasetStack(
+        StandardDatasetStack(
             self,
             construct_id=f"{self._team}-{self.PIPELINE_TYPE}-{dataset}-dataset-stage",
             environment_id=self._environment_id,
@@ -262,6 +279,9 @@ class StandardPipeline(BaseStack):
                 team=self._team,
                 dataset=dataset,
                 pipeline=self.PIPELINE_TYPE,
+                app=app,
+                org=org,
+                routing_b=self.routing_b,
                 stage_a_transform=stage_a_transform,
                 stage_b_transform=stage_b_transform,
                 artifacts_bucket=self._foundations_stage.artifacts_bucket,
@@ -283,25 +303,4 @@ class StandardPipeline(BaseStack):
             id=f"{self._pipeline_id}-{dataset}-rule",
             event_pattern=base_event_pattern,
             event_targets=self._data_lake_light_transform.get_targets()
-        )
-
-        # Add stage b scheduled rule every 5 minutes
-        events.Rule(
-            self,
-            f"{self._resource_prefix}-{self._team}-{self.PIPELINE_TYPE}-{dataset}-schedule-rule",
-            schedule=events.Schedule.rate(cdk.Duration.minutes(5)),
-            targets=[targets.LambdaFunction(
-                self.routing_b,
-                event=events.RuleTargetInput.from_object({
-                    "team": self._team,
-                    "pipeline": self.PIPELINE_TYPE,
-                    "pipeline_stage": "StageB",
-                    "dataset": dataset,
-                    "org": org,
-                    "app": app,
-                    "env": self._environment_id,
-                    "database_name": dataset_stack.database.ref
-                })
-                )
-            ]
         )

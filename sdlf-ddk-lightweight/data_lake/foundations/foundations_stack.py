@@ -91,9 +91,6 @@ class FoundationsStack(BaseStack):
         # pushes scripts from data_lake/src/glue/ to S3 "artifacts" bucket.
         self._glue_role = self._create_sdlf_glue_artifacts()
 
-        # creates lambda layer from code in src/layers/data_lake_library
-        self._data_lake_library = self._create_data_lake_library_layer()
-
     def _create_octagon_ddb_table(self, name: str, ddb_props: Dict[str, Any]) -> ddb.Table:
 
         table_name = name.split("-")[1]
@@ -272,18 +269,6 @@ class FoundationsStack(BaseStack):
         )
         return bucket, bucket_key
 
-    def _create_data_lake_library_layer(self) -> lmbda.LayerVersion:
-        data_lake_library_layer = lmbda.LayerVersion(
-            self,
-            "data-lake-library-layer",
-            layer_version_name="data-lake-library",
-            code=lmbda.Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/layers/data_lake_library")),
-            compatible_runtimes=[lmbda.Runtime.PYTHON_3_9],
-            description=f"{self._resource_prefix} Data Lake Library",
-            license="Apache-2.0",
-        )
-        return data_lake_library_layer
-
     def _create_sdlf_glue_artifacts(self) -> iam.IRole:
 
         bucket_deployment_role: iam.IRole = iam.Role(  # type: ignore
@@ -456,10 +441,6 @@ class FoundationsStack(BaseStack):
     @property
     def register_provider(self) -> Provider:
         return self._register_provider
-
-    @property
-    def data_lake_library(self) -> lmbda.ILayerVersion:
-        return self._data_lake_library
 
     @property
     def object_metadata(self) -> ddb.Table:

@@ -363,15 +363,19 @@ If you want to provide different step machines that what is provided out of the 
             "team": "demoteam",
             "pipeline": "standard",
             "dataset": "legislators",
-            "stage_a_transform": "sdlf_light_transform",
-            "stage_b_transform": "sdlf_heavy_transform"
+            "config": {
+                "stage_a_transform": "sdlf_light_transform",
+                "stage_b_transform": "sdlf_heavy_transform"
+            }
         },
         {
             "team": "demoteam",
             "pipeline": "main",
             "dataset": "newdata",
-            "stage_a_transform": "main_light_transform",
-            "stage_b_transform": "main_heavy_transform"
+            "config": {
+                "stage_a_transform": "main_light_transform",
+                "stage_b_transform": "main_heavy_transform"
+            }
         }
     ]
 } 
