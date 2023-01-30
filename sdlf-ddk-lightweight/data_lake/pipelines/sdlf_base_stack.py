@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any, Protocol, Dict
 
 import aws_cdk.aws_lambda as lmbda
+import aws_cdk.aws_ssm as ssm
 from aws_ddk_core.base import BaseStack
 from constructs import Construct
 
@@ -62,6 +63,7 @@ class SDLFBaseStack(BaseStack):
             customer_configs = json.load(params_file).get(self._environment_id)
 
         self._wrangler_layer = self._create_wrangler_layer()
+        self._create_data_lake_library_layer()
 
         # creates DDB tables, routing lambda, data lake buckets,
         # pushes Glue scripts to S3, and creates data lake library lamdba layer
@@ -138,3 +140,25 @@ class SDLFBaseStack(BaseStack):
         )
 
         return wrangler_layer_version
+
+    def _create_data_lake_library_layer(self) -> lmbda.LayerVersion:
+        data_lake_library_layer = lmbda.LayerVersion(
+            self,
+            "data-lake-library-layer",
+            layer_version_name="data-lake-library",
+            code=lmbda.Code.from_asset(
+                os.path.join(
+                    f"{Path(__file__).parents[1]}", "src/layers/data_lake_library"
+                )
+            ),
+            compatible_runtimes=[lmbda.Runtime.PYTHON_3_9],
+            description=f"{self._resource_prefix} Data Lake Library",
+            license="Apache-2.0",
+        )
+
+        ssm.StringParameter(
+            self,
+            f"data-lake-library-layer-ssm",
+            parameter_name=f"/SDLF/Layer/DataLakeLibrary",
+            string_value=data_lake_library_layer.layer_version_arn,
+        )

@@ -17,11 +17,14 @@ from typing import Any, Optional
 import json
 
 import aws_cdk as cdk
+import aws_cdk.aws_events as events
+import aws_cdk.aws_events_targets as targets
 import aws_cdk.aws_glue as glue
 import aws_cdk.aws_sqs as sqs
 import aws_cdk.aws_iam as iam
 import aws_cdk.aws_kms as kms
 import aws_cdk.aws_lakeformation as lf
+import aws_cdk.aws_lambda as lmbda
 import aws_cdk.aws_s3 as s3
 import aws_cdk.aws_ssm as ssm
 from aws_cdk.custom_resources import Provider
@@ -35,6 +38,9 @@ class StandardDatasetConfig:
     team: str
     dataset: str
     pipeline: str
+    app: str
+    org: str
+    routing_b: lmbda.IFunction
     stage_a_transform: str
     stage_b_transform: str
     artifacts_bucket: s3.IBucket
@@ -60,6 +66,9 @@ class StandardDatasetStack(BaseStack):
         self._team = self._dataset_config.team
         self._pipeline = self._dataset_config.pipeline
         self._dataset = self._dataset_config.dataset
+        self._org = self._dataset_config.org
+        self._app = self._dataset_config.app
+        self._routing_b = self._dataset_config.routing_b
         super().__init__(
             scope,
             construct_id,
@@ -87,6 +96,30 @@ class StandardDatasetStack(BaseStack):
         self._create_glue_database(self._team, self._dataset)
 
         self._create_routing_queue()
+
+        # Add stage b scheduled rule every 5 minutes
+        events.Rule(
+            self,
+            f"{self._resource_prefix}-{self._team}-{self._pipeline}-{self._dataset}-schedule-rule",
+            schedule=events.Schedule.rate(cdk.Duration.minutes(5)),
+            targets=[
+                targets.LambdaFunction(
+                    self._routing_b,
+                    event=events.RuleTargetInput.from_object(
+                        {
+                            "team": self._team,
+                            "pipeline": self._pipeline,
+                            "pipeline_stage": "StageB",
+                            "dataset": self._dataset,
+                            "org": self._org,
+                            "app": self._app,
+                            "env": self._environment_id,
+                            "database_name": self.database.ref,
+                        }
+                    ),
+                )
+            ],
+        )
 
     @property
     def database(self) -> glue.CfnDatabase:
