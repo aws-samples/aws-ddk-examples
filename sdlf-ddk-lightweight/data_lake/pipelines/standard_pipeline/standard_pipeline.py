@@ -267,8 +267,8 @@ class StandardPipeline(BaseStack):
         # Create dataset stack
         stage_a_transform = config.get("stage_a_transform", "sdlf_light_transform")
         stage_b_transform = config.get("stage_b_transform", "sdlf_heavy_transform")
-        app = config.get("app", "datalake")
-        org = config.get("org", "aws")
+        app = self._app
+        org = self._org
 
         StandardDatasetStack(
             self,
