@@ -1,11 +1,14 @@
 from typing import Any
 
 from aws_ddk_core.base import BaseStack
-from aws_ddk_core.resources import S3Factory
+from aws_ddk_core.resources import S3Factory, DataBrewFactory
 from constructs import Construct
 from aws_cdk.aws_s3 import Bucket, BucketAccessControl
 from aws_cdk.aws_s3_deployment import BucketDeployment, Source
 from aws_cdk.aws_iam import Effect, PolicyStatement, ServicePrincipal
+
+from aws_cdk.aws_databrew import CfnDataset, CfnRecipe
+
 
 
 
@@ -16,8 +19,17 @@ class DdkApplicationStack(BaseStack):
 
         input_bucket = self._create_s3_bucket(environment_id = environment_id, 
                                             bucket_id = 'databrew-pipeline-input-bucket')
-        
+
         self._upload_data_to_buckets(input_bucket)
+
+        output_bucket = self._create_s3_bucket(environment_id = environment_id, 
+                                            bucket_id = 'databrew-pipeline-output-bucket')
+        
+        self._create_databrew_environment(input_bucket, output_bucket)
+
+
+
+
         
     def _create_s3_bucket(self, environment_id: str, bucket_id: str) -> Bucket:
         
@@ -72,7 +84,117 @@ class DdkApplicationStack(BaseStack):
                 destination_bucket = input_bucket,
                 destination_key_prefix = 'marketing'
                 )
+    
+    def _create_databrew_environment(self,input_bucket : Bucket, output_bucket : Bucket) -> None:
+
+        # defining the Dataset properties for the Databrew Job
+        marketing_dataset_prop = CfnDataset.InputProperty(
+            s3_input_definition=CfnDataset.S3LocationProperty(
+                bucket=input_bucket.bucket_name,
+                key="marketing/marketing_data.csv",
+            )
+        )
+
+        # defining the Dataset properties for the Databrew Job
+        sales_dataset_prop = CfnDataset.InputProperty(
+            s3_input_definition=CfnDataset.S3LocationProperty(
+                bucket=input_bucket.bucket_name,
+                key="sales/sales_pipeline_data.csv",
+            )
+        )
+
+        # creating the GlueDatabrew input dataset
+        marketing_dataset = CfnDataset(
+            self, 
+            "marketing-dataset", 
+            input = marketing_dataset_prop, 
+            name = "marketing-dataset", 
+            format="CSV")
         
+        # creating the GlueDatabrew input dataset
+        sales_dataset = CfnDataset(
+            self, 
+            "sales-dataset", 
+            input = sales_dataset_prop, 
+            name = "sales-dataset", 
+            format="CSV")
+
+
+        # defining the set of transformations withiin the Glue databrew job
+        databrew_actions = [
+            CfnRecipe.RecipeStepProperty(
+                action = CfnRecipe.ActionProperty(
+                    operation="YEAR",
+                    parameters={"sourceColumn": "Date", "targetColumn": "year"},
+                ),
+                condition_expressions=None,
+            ),
+            CfnRecipe.RecipeStepProperty(
+                action = CfnRecipe.ActionProperty(
+                    operation="MONTH",
+                    parameters={"sourceColumn": "Date", "targetColumn": "month"},
+                ),
+                condition_expressions=None,
+            ),
+            CfnRecipe.RecipeStepProperty(
+                action = CfnRecipe.ActionProperty(
+                    operation="DAY",
+                    parameters={"sourceColumn": "Date", "targetColumn": "day"},
+                ),
+                condition_expressions=None,
+            ),
+        ]
+
+        # creating the GlueDatabrew Recipe
+        databrew_job_recipe: CfnRecipe = CfnRecipe(
+            self,
+            "databrew-recipe",
+            name = "databrew-job-recipe",
+            steps = databrew_actions,
+        )
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
