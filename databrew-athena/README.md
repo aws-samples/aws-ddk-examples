@@ -24,7 +24,7 @@ git clone https://github.com/aws-samples/aws-ddk-examples.git
 Next, navigate into the example directory, and create a virtual environment:
 
 ```console
-cd appflow_athena && python3 -m venv .venv
+cd databrew-athena && python3 -m venv .venv
 ```
 
 To activate the virtual environment, and install the dependencies, run:
