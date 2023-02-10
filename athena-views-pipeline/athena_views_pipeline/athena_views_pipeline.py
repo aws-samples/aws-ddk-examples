@@ -118,6 +118,7 @@ class AthenaViewsPipeline(BaseStack):
                 "glue:CreateTable",
                 "glue:getDatabase",
                 "glue:getTable",
+                "glue:updateTable"
             ],
             resources=[
                 f"arn:aws:glue:{self.region}:{self.account}:catalog",

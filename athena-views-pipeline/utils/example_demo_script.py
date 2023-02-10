@@ -27,14 +27,14 @@ for subfolder in subfolders:
     with open(
         f"./utils/data/{database_name}/{database_name}.json", encoding="utf-8"
     ) as config_file:
-        json_file = json.load(config_file).get(f"{database_name}")
+        json_file = json.load(config_file)
 
     df = pd.DataFrame.from_records(json_file)
     print(df)
 
     wr.s3.to_parquet(
         df,
-        f"s3://{bucket}/data/{database_name}/{database_name}_table",  # athenaqueryexecutionstack-bucket43879c71-9j1b7w6ze0no
+        f"s3://{bucket}/data/{database_name}/{database_name}_table", 
         dataset=True,
         database=database_name,
         table=f"{database_name}_table",
