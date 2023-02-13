@@ -5,6 +5,7 @@ from aws_cdk.aws_events_targets import SfnStateMachine
 from aws_cdk.aws_iam import Effect, PolicyStatement, ServicePrincipal
 from aws_cdk.aws_lambda import Code as lambda_code
 from aws_cdk.aws_s3 import Bucket, BucketAccessControl
+from aws_cdk.aws_dynamodb import Table, AttributeType, Attribute
 from aws_cdk.aws_stepfunctions import JsonPath
 from aws_ddk_core.base import BaseStack
 from aws_ddk_core.pipelines import DataPipeline
@@ -47,6 +48,19 @@ class AthenaViewsPipeline(BaseStack):
             code=lambda_code.from_asset("./athena_views_pipeline/lambda_handlers"),
             handler="handler.lambda_handler",
             layers=[pandas_sdk_layer(self)],
+        )
+
+        self._ddb_table = Table(
+            self,
+            id=f"ddb-failure-capture-table",
+            partition_key=Attribute(name="view_name", type=AttributeType.STRING),
+            sort_key=Attribute(name="db", type=AttributeType.STRING)
+        )
+
+        self._ddb_table.grant_read_write_data(self._sqs_lambda_stage.function)
+        self._sqs_lambda_stage.function.add_environment(
+            key="DDB_TABLE",
+            value=self._ddb_table.table_name
         )
 
         self._athena_views_pipeline = (
