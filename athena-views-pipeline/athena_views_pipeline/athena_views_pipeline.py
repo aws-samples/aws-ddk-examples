@@ -9,7 +9,7 @@ from aws_cdk.aws_dynamodb import Table, AttributeType, Attribute
 from aws_cdk.aws_stepfunctions import JsonPath
 from aws_ddk_core.base import BaseStack
 from aws_ddk_core.pipelines import DataPipeline
-from aws_ddk_core.resources import S3Factory, pandas_sdk_layer
+from aws_ddk_core.resources import S3Factory
 from aws_ddk_core.stages import AthenaSQLStage, SqsToLambdaStage
 from constructs import Construct
 import aws_cdk as cdk
