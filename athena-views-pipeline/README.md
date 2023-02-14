@@ -4,7 +4,7 @@ This pattern deploys serverless data pipeline that handles Athena Views as part 
 # Architecture
 The instructions in this readme will help you deploy the following AWS architecture:
 
->![Screenshot](./docs/arch.png)
+![Screenshot](./docs/athena-views-arch.png)
 
 Feel free to dive into the DDK file, Lambda code if you want to learn more about the implementation details.
 
