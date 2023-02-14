@@ -87,9 +87,9 @@ Be sure to save your changes to the file before proceeding!
 
 # How to define a view?
 
-This pattern contains folders corresponding to databases in glue catalog. In each of these folders, there is one file corresponding to each view available or to be created in glue catalog .
+This pattern contains folders corresponding to databases in glue catalog. In each of these folders, there is one file corresponding to each view available or to be created in glue catalog.
 
-For example, the query which underlies "person_sb"."view_person_gender_male" is located in person_sb/view_person_gender_male.sql.
+For example, the query which underlies "person_sb"."view_person_gender_male" is located in `athena_views_pipeline/sql/person_db/view_person_gender_male.sql`.
 
 1. Create a new SQL file whose file name corresponds to the view name
 File must be put under the folder which corresponds to the database in the glue catalog where the view will be housed. The filename must be prefixed with view_.
@@ -120,22 +120,22 @@ To test the data pipeline, you will first have to do some pre prep as this examp
 
 For demo purpose, this example provides some utilities that can be used to ingest an s3 file while simultaneously cataloging in glue catalog using AWS SDK for Pandas (awswrangler)
 
-Once the pre-reqs of DBs and Tables, the rules crated for each db-view will trigger the step function on the defined schedule to create or replace views. You can monitor the step function to see success/failure. if the step function fails, the event is sent to a SqsLambda stage where it puts some important attributes into a DDB table to capture failure metrics
+Once the pre-reqs of DBs and Tables are in place in the AWS Account, the rules created by the DDK Example for each db-view will trigger the step function on the defined schedule to create or replace views. You can monitor the step function to see success/failure. if the step function fails, the event is sent to a SqsLambda stage where it puts some important attributes into a DDB table to capture failure metrics
 
-In the command below replace **S3_BUCKET_NAME** with the the name of the S3 bucket created by DDK. 
+In the command below replace **S3_BUCKET_NAME** with the name of the S3 bucket created by DDK. 
 Also, replace **AWS_PROFILE** with your profile name you have configured for your AWS CLI.
 
 ```
 $ python utils/example_demo_script.py S3_BUCKET_NAME AWS_PROFILE
 ```
 
-The above command will place files into S3, create the glue db if it doesnt already exists and catalog the s3 data in glue catalog
+The above command will place files into S3, create the glue db if it does not already exist and catalog the s3 data in glue catalog
 
 *Congrats: You now have tested an operational, Athena Views Data Pipeline built by DDK!*
 
 # Conclusion
 
-This pattern used the DDK to deploy a data pipelines that automates glue catalog view creation for various glue dbs on scheduled pattern using Athena and other AWS analytics services.
+This pattern used the DDK to deploy a data pipeline that automates glue catalog view creation for various glue dbs on scheduled pattern using Athena and other AWS analytics services.
 
 In general, this pattern provides the framework for more complex use-cases, while still providing easy-to-use infrastructure by using the DDK!
 
