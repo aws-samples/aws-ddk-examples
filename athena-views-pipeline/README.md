@@ -123,10 +123,10 @@ For demo purpose, this example provides some utilities that can be used to inges
 Once the pre-reqs of DBs and Tables are in place in the AWS Account, the rules created by the DDK Example for each db-view will trigger the step function on the defined schedule to create or replace views. You can monitor the step function to see success/failure. if the step function fails, the event is sent to a SqsLambda stage where it puts some important attributes into a DDB table to capture failure metrics
 
 In the command below replace **S3_BUCKET_NAME** with the name of the S3 bucket created by DDK. 
-Also, replace **AWS_PROFILE** with your profile name you have configured for your AWS CLI.
+Also, replace **AWS_PROFILE** and **AWS_REGION** with your profile name and region (default='us-east-1') you have configured for your AWS CLI.
 
 ```
-$ python utils/example_demo_script.py S3_BUCKET_NAME AWS_PROFILE
+$ python utils/example_demo_script.py -b S3_BUCKET_NAME -p AWS_PROFILE -r AWS_REGION
 ```
 
 The above command will place files into S3, create the glue db if it does not already exist and catalog the s3 data in glue catalog

@@ -44,4 +44,5 @@ for subfolder in subfolders:
         dataset=True,
         database=database_name,
         table=f"{database_name}_table",
+        mode="overwrite"
     )
