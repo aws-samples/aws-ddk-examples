@@ -1,16 +1,23 @@
 import argparse
 import json
 import os
+import boto3
 
 import awswrangler as wr
 import pandas as pd
 
 argParser = argparse.ArgumentParser()
 argParser.add_argument("-b", "--bucket", help="bucket name")
+argParser.add_argument("-p", "--profile", help="profile name")
+argParser.add_argument("-r", "--region", help="aws region")
 
 args = argParser.parse_args()
 
 bucket = args.bucket
+profile = args.profile if args.profile else "default"
+region = args.region if args.region else "us-east-1"
+
+boto3.setup_default_session(profile_name=profile, region_name=region)
 
 subfolders = [f.path for f in os.scandir("./utils/data") if f.is_dir()]
 
@@ -30,7 +37,6 @@ for subfolder in subfolders:
         json_file = json.load(config_file)
 
     df = pd.DataFrame.from_records(json_file)
-    print(df)
 
     wr.s3.to_parquet(
         df,
