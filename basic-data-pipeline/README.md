@@ -2,7 +2,7 @@
 
 In this DDK example, you build a data pipeline that ingests data to S3 using Kinesis Firehose Delivery Stream, and processes it with an AWS Lambda function.
 
-<img align="center" src="docs/_static/basic_data_pipeline.png">
+<img align="center" src="docs/_static/basic-data-pipeline.png">
 
 ## Walkthrough
 
