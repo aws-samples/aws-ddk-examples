@@ -34,7 +34,7 @@ class DataLakeFrameworkCICD(cdk.Stage):  # For CICD Deployments
     ) -> None:
         self._environment_id = environment_id
         self._resource_prefix = pipeline_params.get("resource_prefix", "ddk")
-        super().__init__(scope, f"SDLF-DDK-{environment_id}", **kwargs)
+        super().__init__(scope, f"sdlf-ddk-{environment_id}", **kwargs)
 
         self._sdlf_params = pipeline_params.get("data_pipeline_parameters", {})
 
