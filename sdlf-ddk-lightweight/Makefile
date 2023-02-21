@@ -37,6 +37,7 @@ delete_sdlf:
 
 delete_sdlf_no_cicd:
 	cdk destroy ${CHILD_STACKS} --force --profile ${CHILD}
+	cdk destroy sdlf-ddk-dev --force --profile ${CHILD}
 	
 delete_bootstrap:
 	aws cloudformation delete-stack --stack-name DdkDevBootstrap --profile ${CHILD}
