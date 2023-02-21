@@ -4,9 +4,10 @@ CHILD=default
 REGION=$(shell aws configure get region --profile ${CICD})
 ENV=dev
 CHILD_STACKS=$(shell cdk list --notices=false | grep "sdlf-ddk-${ENV}/" | tr '\n' ' ')
+CICD_ENABLED=${shell jq .environments.cicd.cicd_enabled ddk.json}
 
 
-.PHONY: empty_buckets delete_sdlf delete_sdlf_no_cicd delete_bootstrap delete_bootstrap_no_cicd delete_repositories delete_all_items
+.PHONY: empty_buckets delete_sdlf delete_sdlf_no_cicd delete_bootstrap delete_bootstrap_no_cicd delete_repositories delete_all_items cdk_synth_to_yaml
 
 
 delete_all: empty_buckets delete_sdlf delete_bootstrap delete_repositories delete_all_items
@@ -51,6 +52,9 @@ delete_all_items:
 
 	pushd scripts/cleanup_scripts; python3 ./list_items_to_delete.py ${ENV} ${CHILD}; popd;
 	pushd scripts/cleanup_scripts; python3 ./delete_script.py ${CHILD}; popd;
+
+cdk_synth_to_yaml:
+	pushd scripts; python3 ./cdk_synth_to_yaml.py ${CICD_ENABLED}; popd;
 
 
 

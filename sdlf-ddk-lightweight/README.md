@@ -52,6 +52,11 @@ Python (version 3.8 or above) and its package manager, pip (version 9.0.3 or abo
 $ python --version
 $ pip --version
 ```
+Install JQ
+
+```
+$ brew install jq
+```
 
 The AWS CLI installed and configured
 
@@ -483,3 +488,15 @@ _NOTE:_ Before running this command, look into the `Makefile` and ensure that:
 
 This command will use a series of CLI commands and python scripts in order to clean up your AWS account environment.
 
+## Optional Utils 
+<br />
+
+Incase you need synthesised YAML templates of the CDK apps, you can create the below command. Make sure your `cicd_enabled` parameter is set in ddk.json
+
+```
+make cdk_synth_to_yaml
+```
+
+Based on cicd_enabled you will get bunch of YAML templates under a new subdirectory `YAML/`
+
+_NOTE:_ We recommend to use CDK directly for deployment for better customer experience instead of systhesized YAML template. Deployment and test of YAML template directly to CFN is at your own discretion
