@@ -21,13 +21,16 @@ from urllib.parse import unquote_plus
 
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
+from botocore.config import Config
 from botocore.exceptions import ClientError
+
+session_config = Config(user_agent_extra="awsddksdlf/0.1.0")
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-sqs = boto3.resource('sqs')
-ssm=boto3.client('ssm')
-dynamodb = boto3.resource("dynamodb")
+sqs = boto3.resource('sqs', config=session_config)
+ssm=boto3.client('ssm', config=session_config)
+dynamodb = boto3.resource("dynamodb", config=session_config)
 dataset_table = dynamodb.Table('octagon-Datasets-{}'.format(os.environ['ENV']))
 catalog_table = dynamodb.Table(f"octagon-ObjectMetadata-{os.environ['ENV']}")
 prefix = os.environ["PREFIX"]
