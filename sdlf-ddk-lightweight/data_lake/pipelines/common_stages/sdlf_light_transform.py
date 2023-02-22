@@ -92,7 +92,8 @@ class SDLFLightTransform(StateMachineStage):
             id=f"{self._prefix}-routing-{self.team}-{self.pipeline}-sqs-lambda",
             environment_id=self._environment_id,
             lambda_function=routing_lambda,
-            sqs_queue=self._routing_queue
+            sqs_queue=self._routing_queue,
+            message_group_id=f"{self._prefix}-routing-{self.team}-{self.pipeline}-group"
         )
 
         self._create_lambda_function("redrive")

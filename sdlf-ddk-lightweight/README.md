@@ -52,6 +52,11 @@ Python (version 3.8 or above) and its package manager, pip (version 9.0.3 or abo
 $ python --version
 $ pip --version
 ```
+Install JQ
+
+```
+$ brew install jq
+```
 
 The AWS CLI installed and configured
 
@@ -145,7 +150,7 @@ $ pip install -r requirements.txt --no-cache-dir
 
 <br />
 
-If your AWS account hasn't been used to deploy DDK apps before, then you need to bootstrap your environment for both the `cicd` and the `dev` environments:
+If your AWS account hasn't been used to deploy DDK apps before, then you need to bootstrap your environment for both the `cicd` and the `dev` environments, you can skip cicd bootstrap as well as `-a` in the dev bootstrap if you are not using the cicd deployment
 
 ```
 $ ddk bootstrap --help
@@ -189,6 +194,7 @@ Before deploying the pipeline, edit the `ddk.json` file for the environment you 
 
 1. The correct AWS Account ID in `account` field
 2. The region to deploy the DDK SDLF Example in the `region` field
+3. Set cicd_enabled to `true` or `false` depending on your usecase
 
 
 The `ddk.json` is the same level as `app.py`. 
@@ -206,7 +212,7 @@ If the parameters are not filled, default values for team, pipeline, dataset, st
 <br />
 <br />
 
-### Performing Git Operations 
+### Performing Git Operations [Only for CICD enabled = `true` option]
 <br />
 
 Initialise git for the repository
@@ -466,19 +472,31 @@ for customer_config in customer_configs:
 
 <br />
 
-Once the solution has been deployed and tested, use the following command to clean up the resources
+Once the solution has been deployed and tested, use the following command to clean up the resources depending if you have deployed with CICD or not
 
 ```
-$ make delete_all
+$ make delete_all or make delete_all_no_cicd
 ```
 
 _NOTE:_ Before running this command, look into the `Makefile` and ensure that:
 
 1.  The `delete_repositories` function is passing the correct `-d REPO_NAME` (default: `sdlf-ddk-example`)
 
-2.  The `delete_bootstrap` function is passing the correct `--stack-name BOOTSTRAP_STACK_NAME` (default: `DdkDevBootstrap`)
+2.  The `delete_bootstrap` or `delete_bootstrap_no_cicd` function is passing the correct `--stack-name BOOTSTRAP_STACK_NAME` (default: `DdkDevBootstrap`)
 
 3.  For Single account deployment, make sure you change the `CICD`, `CHILD` variables to your same respective aws profile name. Also update the `ENV` matching `ddk.json`
 
 This command will use a series of CLI commands and python scripts in order to clean up your AWS account environment.
 
+## Optional Utils 
+<br />
+
+Incase you need synthesised YAML templates of the CDK apps, you can create the below command. Make sure your `cicd_enabled` parameter is set in ddk.json
+
+```
+make cdk_synth_to_yaml
+```
+
+Based on cicd_enabled you will get bunch of YAML templates under a new subdirectory `YAML/`
+
+_NOTE:_ We recommend to use CDK directly for deployment for better customer experience instead of systhesized YAML template. Deployment and test of YAML template directly to CFN is at your own discretion
