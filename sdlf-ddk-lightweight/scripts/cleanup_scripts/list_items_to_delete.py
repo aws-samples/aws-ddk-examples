@@ -47,11 +47,11 @@ def list_ddb_tables(prefix):
     table_list = []
     response = dynamodb_client.list_tables()
     for table_name in response["TableNames"]:
-        if ((re.match(f"{prefix}-*", table_name) or re.match("wfm-*", table_name)) or (re.match(f"octagon-*", table_name) or re.match("tps-*", table_name))):
+        if ((re.match(f"{prefix}-*", table_name)) or (re.match(f"octagon-*", table_name))):
             table_list.append(table_name)
     return table_list
 
-def list_kms_keys(max_items):
+def list_kms_keys(max_items, prefix):
     key_id_list=[]
     try:
         # creating paginator object for list_keys() method
@@ -63,7 +63,7 @@ def list_kms_keys(max_items):
 
         full_result = response_iterator.build_full_result()
         for page in full_result['Aliases']:
-            if ((re.match(f"alias/{prefix}-*", page["AliasName"]) or re.match("alias/pmn-*", page["AliasName"])) or (re.match(f"alias/ddk-*", page["AliasName"]) or re.match("alias/tps-*", page["AliasName"]))):
+            if ((re.match(f"alias/{prefix}-*", page["AliasName"])) or (re.match(f"alias/ddk-*", page["AliasName"]))):
                 response = kms_client.describe_key(
                     KeyId=page["TargetKeyId"]
                 )
@@ -75,10 +75,10 @@ def list_kms_keys(max_items):
     else:
         return key_id_list   
 
-def list_sqs_queues():
+def list_sqs_queues(prefix):
     queue_list=[]
     response = sqs_client.list_queues(
-        QueueNamePrefix="wfm-"
+        QueueNamePrefix=f"{prefix}-"
     )
     if ("QueueUrls" in response):
         queue_urls = response["QueueUrls"]
@@ -99,10 +99,10 @@ def list_lambda_layers():
             )
     return layer_list
 
-def list_rules():
+def list_rules(prefix):
     rule_list=[]
     response = events_client.list_rules(
-        NamePrefix='wfm-'
+        NamePrefix=f'{prefix}-'
     )
     for rule in response["Rules"]:
         rule_list.append(rule["Name"])
@@ -132,7 +132,7 @@ def list_cw_logs(prefix):
 
         full_result = response_iterator.build_full_result()
         for page in full_result['logGroups']:
-            if ((re.match(f"/aws/lambda/{prefix}-*", page["logGroupName"]) or re.match("/aws/lambda/SDLF-*", page["logGroupName"])) or (re.match(f"/aws/lambda/tps-*", page["logGroupName"]) or re.match("/aws/lambda/wfm-*", page["logGroupName"]))):
+            if ((re.match(f"/aws/lambda/{prefix}-*", page["logGroupName"]) or re.match("/aws/lambda/SDLF-*", page["logGroupName"]))):
                 cw_log_list.append(page["logGroupName"])
             elif re.match("/aws/codebuild/codepipelineAssetsFileAsset-*", page["logGroupName"]):
                 cw_log_list.append(page["logGroupName"])
@@ -161,16 +161,16 @@ if __name__ == "__main__":
         ddb_table_list = list_ddb_tables(prefix)
         resources["ddb"]=ddb_table_list
 
-        kms_key_list = list_kms_keys(MAX_ITEMS)
+        kms_key_list = list_kms_keys(MAX_ITEMS, prefix)
         resources["kms"]=kms_key_list
 
-        sqs_list = list_sqs_queues()
+        sqs_list = list_sqs_queues(prefix)
         resources["sqs"]=sqs_list
 
         lambda_layer_list=list_lambda_layers()
         resources["lambdaLayer"]=lambda_layer_list
 
-        rules_list = list_rules()
+        rules_list = list_rules(prefix)
         resources["eventbridge"]=rules_list
 
         cfn_template_list = list_cfn_template()
