@@ -40,6 +40,7 @@ export interface SDLFLightTransformProps extends StateMachineStageProps {
 }
 
 export class SDLFLightTransform extends StateMachineStage {
+    readonly targets?: events.IRuleTarget[];
     readonly config: SDLFLightTransformConfig;
     readonly environmentId: string;
     readonly prefix: string;
@@ -92,6 +93,7 @@ export class SDLFLightTransform extends StateMachineStage {
         const errorTask = this.createLambdaTask("error")
         this.buildStateMachine(preupdateTask, processTask, postupdateTask, errorTask)
 
+        this.targets = new eventTargets.LambdaFunction(this.config.routingLambda)
     
     }
     protected createRoutingQueues(): [sqs.IQueue, sqs.IQueue, kms.IKey] {
@@ -401,10 +403,3 @@ export class SDLFLightTransform extends StateMachineStage {
         )
     }
 }
-
-
-        
-
-
-    def gettargets(this) -> Optional[List[events.IRuleTarget]]:
-        return [targets.LambdaFunction(this.config.routingLambda)]

@@ -1,4 +1,5 @@
 import * as cdk from "aws-cdk-lib";
+import * as events from "aws-cdk-lib/aws-events";
 import * as eventTargets from "aws-cdk-lib/aws-events-targets";
 import * as kms from "aws-cdk-lib/aws-kms";
 import * as iam from "aws-cdk-lib/aws-iam";
@@ -31,6 +32,7 @@ export interface SDLFHeavyTransformProps extends StateMachineStageProps {
     readonly config: SDLFHeavyTransformConfig;
 }
 export class SDLFHeavyTransform extends StateMachineStage {
+    readonly targets?: events.IRuleTarget[];
     readonly config: SDLFHeavyTransformConfig;
     readonly environmentId: string;
     readonly prefix: string;

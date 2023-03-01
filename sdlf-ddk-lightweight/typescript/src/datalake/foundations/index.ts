@@ -1,1 +1,1 @@
-export * from "foundations-stack.ts";
+export * from "./foundations-stack";
