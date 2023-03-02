@@ -9,12 +9,11 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as s3Deployment from "aws-cdk-lib/aws-s3-deployment";
 import * as cr from "aws-cdk-lib/custom-resources";
-import { BaseStack, assignLambdaFunctionProps, assignS3BucketProps } from "aws-ddk-core";
+import { BaseStack, LambdaDefaults, S3Defaults } from "aws-ddk-core";
 
 import { Construct } from "constructs";
 
 export interface FoundationsStackProps extends cdk.StackProps {
-  readonly id: string;
   readonly environmentId: string;
   readonly resourcePrefix: string;
   readonly app: string;
@@ -23,7 +22,7 @@ export interface FoundationsStackProps extends cdk.StackProps {
 }
 interface createOctagonTableProps {
   readonly name: string;
-  readonly ddbProps: object;
+  readonly partitionKey: any;
 }
 export class FoundationsStack extends BaseStack {
   readonly resourcePrefix: string;
@@ -34,7 +33,6 @@ export class FoundationsStack extends BaseStack {
   readonly datasets: dynamo.Table;
   readonly pipelines: dynamo.Table;
   readonly peh: dynamo.Table;
-  readonly registerFunction: lambda.Function;
   readonly registerProvider: cr.Provider;
   readonly lakeformationBucketRegistrationRole: iam.Role;
   readonly rawBucket: s3.Bucket;
@@ -47,7 +45,7 @@ export class FoundationsStack extends BaseStack {
   readonly artifactsBucketKey: kms.Key;
   readonly athenaBucket: s3.Bucket;
   readonly athenaBucketKey: kms.Key;
-  readonly glueRole: iam.Role;
+  readonly glueRole: iam.IRole;
 
   constructor(scope: Construct, id: string, props: FoundationsStackProps) {
     super(scope, `${props.resourcePrefix}-FoundationsStack-${props.environmentId}`, props);
@@ -57,30 +55,40 @@ export class FoundationsStack extends BaseStack {
     this.org = props.org;
     this.objectMetadata = this.createOctagonTable({
       name: `octagon-ObjectMetadata-${props.environmentId}`,
-      ddbProps: {"partition_key": {name: "id", type: dynamo.AttributeType.STRING}},
+      partitionKey: {name: "id", type: dynamo.AttributeType.STRING},
     })
 
     this.datasets = this.createOctagonTable({
       name: `octagon-Datasets-${props.environmentId}`,
-      ddbProps: {"partition_key": {name: "name", type: dynamo.AttributeType.STRING}},
+      partitionKey: {"partition_key": {name: "name", type: dynamo.AttributeType.STRING}},
     })
     this.pipelines = this.createOctagonTable({
       name: `octagon-Pipelines-${props.environmentId}`,
-      ddbProps: {"partition_key": {name: "name", type: dynamo.AttributeType.STRING}},
+      partitionKey: {"partition_key": {name: "name", type: dynamo.AttributeType.STRING}},
     })
     this.peh = this.createOctagonTable({
       name: `octagon-PipelineExecutionHistory-${props.environmentId}`,
-      ddbProps: {"partition_key": {name: "id", type: dynamo.AttributeType.STRING}},
+      partitionKey: {"partition_key": {name: "id", type: dynamo.AttributeType.STRING}},
     })
     this.createRegister(props.runtime)
 
     // creates encrypted buckets and registers them in lake formation
     this.lakeformationBucketRegistrationRole = this.createLakeformationBucketRegistrationRole();
-    [this.rawBucket, this.rawBucketKey] = this.createBucket("raw")
-    [this.stageBucket, this.stageBucketKey] = this.createBucket("stage")
-    [this.analyticsBucket, this.analyticsBucketKey] = this.createBucket("analytics")
-    [this.artifactsBucket, this.artifactsBucketKey] = this.createBucket("artifacts")
-    [this.athenaBucket, this.athenaBucketKey] = this.createBucket("athena")
+    const [rawBucket, rawBucketKey] = this.createBucket("raw")
+    this.rawBucket = rawBucket;
+    this.rawBucketKey = rawBucketKey;
+    const [stageBucket, stageBucketKey] = this.createBucket("stage")
+    this.stageBucket = stageBucket;
+    this.stageBucketKey = stageBucketKey;
+    const [analyticsBucket, analyticsBucketKey] = this.createBucket("analytics")
+    this.analyticsBucket = analyticsBucket;
+    this.analyticsBucketKey = analyticsBucketKey;
+    const [artifactsBucket, artifactsBucketKey] = this.createBucket("artifacts")
+    this.artifactsBucket = artifactsBucket;
+    this.artifactsBucketKey = artifactsBucketKey;
+    const [athenaBucket, athenaBucketKey] = this.createBucket("athena")
+    this.athenaBucket = athenaBucket;
+    this.athenaBucketKey = athenaBucketKey;
 
     // pushes scripts from data_lake/src/glue/ to S3 "artifacts" bucket.
     this.glueRole = this.createSdlfGlueArtifacts()
@@ -115,40 +123,42 @@ export class FoundationsStack extends BaseStack {
       this,
       `${props.name}-table`,
       {
+        partitionKey: props.partitionKey,
         tableName: props.name,
         encryption: dynamo.TableEncryption.CUSTOMER_MANAGED,
         encryptionKey: tableKey,
         billingMode: dynamo.BillingMode.PAY_PER_REQUEST,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
         pointInTimeRecovery: true,
-        ...props.ddbProps
       }
     )
   }
   private createRegister(runtime: lambda.Runtime): void {
-    this.registerFunction = new lambda.Function(
+    const registerFunction = new lambda.Function(
       this,
       "register-function",
-      assignLambdaFunctionProps({
-        code: lambda.Code.fromAsset(path.join(__dirname, "src/lambdas/register/"),
-        handler: "handler.on_event",
-        memorySize: 256,
-        description: "Registers Datasets, Pipelines and Stages into their respective DynamoDB tables",
-        timeout: cdk.Duration.minutes(15),
-        runtime: runtime,
-        environment: {
-          "OCTAGON_DATASET_TABLE_NAME": this.datasets.tableName,
-          "OCTAGON_PIPELINE_TABLE_NAME": this.pipelines.tableName
+      LambdaDefaults.functionProps(
+        {
+          code: lambda.Code.fromAsset(path.join(__dirname, "src/lambdas/register/")),
+          handler: "handler.on_event",
+          memorySize: 256,
+          description: "Registers Datasets, Pipelines and Stages into their respective DynamoDB tables",
+          timeout: cdk.Duration.minutes(15),
+          runtime: runtime,
+          environment: {
+             "OCTAGON_DATASET_TABLE_NAME": this.datasets.tableName,
+             "OCTAGON_PIPELINE_TABLE_NAME": this.pipelines.tableName
+          }
         }
-      }),  
+      ),  
     )
-    this.datasets.grantReadWriteData(this.registerFunction)
-    this.pipelines.grantReadWriteData(this.registerFunction)
-    this.registerProvider = new cr.Provider(
+    this.datasets.grantReadWriteData(registerFunction)
+    this.pipelines.grantReadWriteData(registerFunction)
+    const registerProvider = new cr.Provider(
       this,
       "register-provider",
       {
-        onEventHandler: this.registerFunction
+        onEventHandler: registerFunction
       }
     )
 
@@ -178,7 +188,7 @@ export class FoundationsStack extends BaseStack {
     const bucket = new s3.Bucket(
         this,
         `${this.resourcePrefix}-$${name}-bucket`,
-        assignS3BucketProps(
+        S3Defaults.bucketProps(
           {
             bucketName: `${this.resourcePrefix}-${this.environmentId}-${cdk.Aws.REGION}-${cdk.Aws.ACCOUNT_ID}-$${name}`,
             encryption: s3.BucketEncryption.KMS,

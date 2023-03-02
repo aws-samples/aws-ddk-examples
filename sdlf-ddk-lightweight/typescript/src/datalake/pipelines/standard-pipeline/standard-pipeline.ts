@@ -6,7 +6,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as cr from "aws-cdk-lib/custom-resources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as ssm from "aws-cdk-lib/aws-ssm";
-import { BaseStack, BaseStackProps, DataPipeline, assignLambdaFunctionProps, S3EventStage } from "aws-ddk-core";
+import { BaseStack, BaseStackProps, DataPipeline, LambdaDefaults, S3EventStage } from "aws-ddk-core";
 import { Construct } from "constructs";
 import { FoundationsStack } from "../../foundations";
 import { SDLFHeavyTransform , SDLFHeavyTransformConfig, SDLFLightTransform, SDLFLightTransformConfig } from "../common-stages";
@@ -48,8 +48,10 @@ export class StandardPipeline extends BaseStack {
     readonly org: string;
     readonly runtime: lambda.Runtime;
     readonly environmentId: string;
-    readonly s3EventCaptureStage: S3EventStage;
-    readonly routingB: lambda.IFunction;
+    s3EventCaptureStage: S3EventStage;
+    datalakeLightTransform: SDLFLightTransform;
+    routingB: lambda.IFunction;
+    datalakePipeline: DataPipeline;
 
     constructor(scope: Construct, id: string, props: StandardPipelineProps) {
         super(scope, id, props);
@@ -109,7 +111,7 @@ export class StandardPipeline extends BaseStack {
                     registerProvider: this.foundationsStage.registerProvider,
                     wranglerLayer: this.wranglerLayer,
                     runtime: this.runtime
-                }
+                },
                 props: {
                     "version": 1,
                     "status": "ACTIVE",
@@ -132,8 +134,8 @@ export class StandardPipeline extends BaseStack {
                 config: {
                     team: this.team,
                     pipeline: PIPELINE_TYPE,
-                    stagebucket: this.foundationsStage.stageBucket,
-                    stagebucketkey: this.foundationsStage.stageBucketKey,
+                    stageBucket: this.foundationsStage.stageBucket,
+                    stageBucketKey: this.foundationsStage.stageBucketKey,
                     datalakeLib: this.datalakeLibraryLayer,
                     registerProvider: this.foundationsStage.registerProvider,
                     wranglerLayer: this.wranglerLayer,
@@ -160,9 +162,9 @@ export class StandardPipeline extends BaseStack {
                     description: `${this.resourcePrefix} data lake pipeline`,
                 }
             )
-            .addStage(this.s3EventCaptureStage)
-            .addStage(this.datalakeLightTransform, {skipRule: true})
-            .addStage(datalakeHeavyTransform, {skipRule: true})
+            .addStage({stage: this.s3EventCaptureStage})
+            .addStage({stage: this.datalakeLightTransform, skipRule: true})
+            .addStage({stage: datalakeHeavyTransform, skipRule: true})
         return datalakeHeavyTransform
     }
     protected createRoutingLambda(): lambda.IFunction {
@@ -276,22 +278,23 @@ export class StandardPipeline extends BaseStack {
                 stageBucket: this.foundationsStage.stageBucket,
                 stageBucketKey: this.foundationsStage.stageBucketKey,
                 glueRole: this.foundationsStage.glueRole,
-                //registerProvider: this.foundationsStage.registerProvider
+                registerProvider: this.foundationsStage.registerProvider
             }
         }
     )
 
     // Add S3 object created event pattern
     const baseEventPattern = this.s3EventCaptureStage.eventPattern
-    baseEventPattern.detail["object"] = { 
-        "key": [{"prefix": `${this.team}/{dataset}/`}]
+    if (baseEventPattern && baseEventPattern.detail) {
+        baseEventPattern.detail["object"] = { 
+            "key": [{"prefix": `${this.team}/{dataset}/`}]
+        }
     }
 
-    this.datalakePipeline.addrule(
-        `{this.pipelineid}-{dataset}-rule`,
+    this.datalakePipeline.addRule(
         {
             eventPattern: baseEventPattern,
-            eventTargets: this.datalakeLightTransform.getTargets()
+            eventTargets: this.datalakeLightTransform.targets
         }
     )
     }

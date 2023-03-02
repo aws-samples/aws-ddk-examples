@@ -12,9 +12,6 @@ export interface CustomDatasetConfig {
 }
 
 export interface CustomDatasetStackProps extends cdk.StackProps {
-    scope: Construct;
-    constructId: string;
-    environmentid: string;
     resourcePrefix: string;
     config: CustomDatasetConfig, 
 }

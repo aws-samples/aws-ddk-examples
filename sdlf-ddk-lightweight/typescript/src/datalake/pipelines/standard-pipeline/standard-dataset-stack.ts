@@ -10,7 +10,7 @@ import * as cr from "aws-cdk-lib/custom-resources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as ssm from "aws-cdk-lib/aws-ssm";
-import { BaseStack, BaseStackProps, assignKmsKeyProps } from "aws-ddk-core";
+import { BaseStack, BaseStackProps, KmsDefaults } from "aws-ddk-core";
 import { Construct } from "constructs";
 
 
@@ -32,8 +32,6 @@ export interface StandardDatasetConfig {
 }
 
 export interface StandardDatasetStackProps extends BaseStackProps {
-    scope: Construct,
-    constructId: string,
     environmentId: string,
     resourcePrefix: string,
     config: StandardDatasetConfig,
@@ -49,14 +47,16 @@ export class StandardDatasetStack extends BaseStack {
     readonly org: string;
     readonly app: string;
     readonly routingB: lambda.IFunction;
-    readonly stageATransform: string;
-    readonly stageBTransform: string;
+    readonly environmentId: string;
+    stageATransform: string;
+    stageBTransform: string;
     readonly database: glue.CfnDatabase;
 
     constructor(scope: Construct, id: string, props: StandardDatasetStackProps) {
         super(scope, id, props);
         this.datasetConfig= props.config
         this.resourcePrefix = props.resourcePrefix
+        this.environmentId = props.environmentId
         this.team = this.datasetConfig.team
         this.pipeline = this.datasetConfig.pipeline
         this.dataset = this.datasetConfig.dataset
@@ -79,30 +79,31 @@ export class StandardDatasetStack extends BaseStack {
         this.createRoutingQueue()
         
         // Add stage b scheduled rule every 5 minutes
-        new events.Rule(
+        const scheduledRule = new events.Rule(
             this,
             `${this.resourcePrefix}-${this.team}-${this.pipeline}-${this.dataset}-schedule-rule`,
             {
                 schedule: events.Schedule.rate(cdk.Duration.minutes(5)),
-                targets: 
-                    new eventsTargets.LambdaFunction(
-                        this.routingB,
-                        event: eventsTargets.RuleTargetInput.fromObject(
-                            {
-                                "team": this.team,
-                                "pipeline": this.pipeline,
-                                "pipelinestage": "StageB",
-                                "dataset": this.dataset,
-                                "org": this.org,
-                                "app": this.app,
-                                "env": this.environmentId,
-                                "databasename": this.database.ref,
-                            }
-                        ),
-                    )
-                ],
             }
         )
+        scheduledRule.addTarget(
+            new eventsTargets.LambdaFunction(
+                this.routingB,
+                {
+                    event: events.RuleTargetInput.fromObject(
+                        {
+                            "team": this.team,
+                            "pipeline": this.pipeline,
+                            "pipelinestage": "StageB",
+                            "dataset": this.dataset,
+                            "org": this.org,
+                            "app": this.app,
+                            "env": this.environmentId,
+                            "databasename": this.database.ref,
+                        }
+                    ),
+                }
+        ))
     }
     protected createStageBGlueJob(
         team: string,
@@ -177,15 +178,17 @@ export class StandardDatasetStack extends BaseStack {
     }
     protected createGlueDatabase(
         team: string,
-        datasetName: string;
+        datasetName: string
     ): glue.CfnDatabase {
         new lakeformation.CfnDataLakeSettings(
             this,
             `${this.resourcePrefix}-${team}-${datasetName}-DataLakeSettings`,
             {
-                admins: [lakeformation.CfnDataLakeSettings.DataLakePrincipalProperty(
-                    datalakePrincipalIdentifier: this.datasetConfig.glueRole.roleArn
-                )]
+                admins: [
+                    {
+                        dataLakePrincipalIdentifier: this.datasetConfig.glueRole.roleArn
+                    }
+                ]
             }
         )
 
@@ -193,10 +196,10 @@ export class StandardDatasetStack extends BaseStack {
             this,
             `${this.resourcePrefix}-${team}-${datasetName}-database`,
             {
-            databaseInput: glue.CfnDatabase.DatabaseInputProperty(
-                name=`awsdatalake{this.environmentId}${team}${datasetName}db",
-                locationuri=`s3://{this.datasetConfig.stagebucket.bucketname}/post-stage/${team}/${datasetName}"
-            ),
+            databaseInput: {
+                name: `awsdatalake{this.environmentId}${team}${datasetName}db`,
+                locationUri: `s3://{this.datasetConfig.stagebucket.bucketname}/post-stage/${team}/${datasetName}`
+            },
             catalogId: cdk.Aws.ACCOUNT_ID
             }
         )
@@ -205,13 +208,15 @@ export class StandardDatasetStack extends BaseStack {
             this,
             `${this.resourcePrefix}-${team}-${datasetName}-glue-job-database-lakeformation-permissions`,
             {
-            datalakeprincipal: lf.CfnPermissions.DataLakePrincipalProperty(
-                datalakePrincipalIdentifier: this.datasetConfig.glueRole.rolearn
-            ),
-            resource: lakeformation.CfnPermissions.ResourceProperty(
-                databaseResource: lakeformation.CfnPermissions.DatabaseResourceProperty(name=this.database.ref)
-            ),
-            permissions: ["CREATETABLE", "ALTER", "DROP"],
+                dataLakePrincipal: {
+                    dataLakePrincipalIdentifier: this.datasetConfig.glueRole.roleArn
+                },
+                resource: {
+                    databaseResource: {
+                        name: this.database.ref
+                    }
+                },
+                permissions: ["CREATETABLE", "ALTER", "DROP"],
             }
         )
         return database

@@ -10,7 +10,7 @@ import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as sfn from "aws-cdk-lib/aws-stepfunctions";
 import * as tasks from "aws-cdk-lib/aws-stepfunctions-tasks";
 import * as cr from "aws-cdk-lib/custom-resources";
-import { assignLambdaFunctionProps, assignKmsKeyProps, SqsToLambdaStage, StateMachineStage, StateMachineStageProps } from "aws-ddk-core";
+import { LambdaDefaults, KmsDefaults, SqsToLambdaStage, StateMachineStage, StateMachineStageProps } from "aws-ddk-core";
 import { Construct } from "constructs";
 
 
@@ -20,18 +20,26 @@ export interface SDLFLightTransformConfig {
     readonly pipeline: string;
     readonly rawBucket: s3.IBucket;
     readonly rawBucketKey: kms.IKey;
-    readonly stagebucket: s3.IBucket;
+    readonly stageBucket: s3.IBucket;
     readonly stageBucketKey: kms.IKey;
     readonly routingLambda: lambda.IFunction;
-    readonly dataLakeLib: lambda.ILayerVersion;
+    readonly datalakeLib: lambda.ILayerVersion;
     readonly registerProvider: cr.Provider;
     readonly wranglerLayer: lambda.ILayerVersion;
     readonly runtime: lambda.Runtime;
 }
 
+export interface createLambdaFunctionProps {
+    memorySize?: number;
+    timeout?: number;
+}
+
+export interface createLambdaTaskProps {
+    resultPath?: string; 
+    memorySize?: number;
+}
+
 export interface SDLFLightTransformProps extends StateMachineStageProps {
-    readonly scope: Construct;
-    readonly constructid: string;
     readonly name: string;
     readonly prefix: string;
     readonly environmentId: string;
@@ -41,18 +49,20 @@ export interface SDLFLightTransformProps extends StateMachineStageProps {
 
 export class SDLFLightTransform extends StateMachineStage {
     readonly targets?: events.IRuleTarget[];
+    readonly stateMachine: sfn.StateMachine;
+    readonly eventPattern?: events.EventPattern;
     readonly config: SDLFLightTransformConfig;
     readonly environmentId: string;
     readonly prefix: string;
     readonly team: string;
     readonly pipeline: string;
-    readonly lambdaRole: iam.Role;
+    readonly lambdaRole: iam.IRole;
     readonly redriveLambda: lambda.Function;
     readonly routingLambda: lambda.Function;
     readonly props: object;
-    readonly routingQueue: sqs.Queue;
-    readonly routingDLQ: sqs.Queue;
-    readonly sqsKey: kms.Key;
+    readonly routingQueue: sqs.IQueue;
+    readonly routingDLQ: sqs.IQueue;
+    readonly sqsKey: kms.IKey;
 
     constructor(scope: Construct, id: string, props: SDLFLightTransformProps) {
         super(scope, id, props);
@@ -70,13 +80,16 @@ export class SDLFLightTransform extends StateMachineStage {
                 properties: serviceSetupProperties
             }
         )
-        this.team = this.config.team
         this.pipeline = this.config.pipeline
-
-        [this.routingQueue, this.routingDLQ, this.sqsKey] = this.createRoutingQueues()
+        this.team = this.config.team
+        
+        const [ routingQueue, routingDLQ, sqsKey] = this.createRoutingQueues()
+        this.routingQueue = routingQueue;
+        this.routingDLQ = routingDLQ;
+        this.sqsKey = sqsKey;
 
         this.lambdaRole = this.createLambdaRole()
-        const routingLambda = this.createLambdaFunction("routing", timeoutminutes=1);
+        const routingLambda = this.createLambdaFunction("routing", {timeout: 1});
         new SqsToLambdaStage(
             this,
             `${this.prefix}-routing-${this.team}-${this.pipeline}-sqs-lambda`,
@@ -86,21 +99,21 @@ export class SDLFLightTransform extends StateMachineStage {
                 messageGroupId: `${this.prefix}-routing-${this.team}-${this.pipeline}-group`
             }
         )
-        this.createLambdaFunction("redrive")
-        const preupdateTask = this.createLambdaTask("preupdate")
-        const processTask = this.createLambdaTask("process", "$.Payload.body.processedKeys", 1536)
-        const postupdateTask = this.createLambdaTask("postupdate", "$.statusCode")
-        const errorTask = this.createLambdaTask("error")
+        this.createLambdaFunction("redrive", {})
+        const preupdateTask = this.createLambdaTask("preupdate", {})
+        const processTask = this.createLambdaTask("process", { resultPath: "$.Payload.body.processedKeys", memorySize: 1536})
+        const postupdateTask = this.createLambdaTask("postupdate", { resultPath: "$.statusCode" })
+        const errorTask = this.createLambdaTask("error", {})
         this.buildStateMachine(preupdateTask, processTask, postupdateTask, errorTask)
 
-        this.targets = new eventTargets.LambdaFunction(this.config.routingLambda)
+        this.targets = [new eventTargets.LambdaFunction(this.config.routingLambda)]
     
     }
     protected createRoutingQueues(): [sqs.IQueue, sqs.IQueue, kms.IKey] {
         const sqsKey = new kms.Key(
             this,
             `${this.prefix}-${this.team}-${this.pipeline}-sqs-key-a`,
-            assignKmsKeyProps(
+            KmsDefaults.keyProps(
             {
                 description:`${this.prefix} SQS Key Stage A`,
                 alias:`${this.prefix}-${this.team}-${this.pipeline}-sqs-stage-a-key`,
@@ -297,7 +310,7 @@ export class SDLFLightTransform extends StateMachineStage {
         this.config.rawBucketKey.grantDecrypt(role)
         this.config.rawBucket.grantRead(role)
         this.config.stageBucketKey.grantEncrypt(role)
-        this.config.stagebucket.grantWrite(role)
+        this.config.stageBucket.grantWrite(role)
         this.routingQueue.grantSendMessages(role)
         this.routingQueue.grantConsumeMessages(role)
         this.routingDLQ.grantSendMessages(role)
@@ -308,8 +321,7 @@ export class SDLFLightTransform extends StateMachineStage {
     }
     protected createLambdaFunction(
         stepName: string,
-        memorySize?: number,
-        timeout?: number,
+        props: createLambdaFunctionProps,
     ): lambda.IFunction {
         return new lambda.Function(
             this,
@@ -328,21 +340,21 @@ export class SDLFLightTransform extends StateMachineStage {
                 },
                 role: this.lambdaRole,
                 description: `execute ${stepName} step of light transform`,
-                timeout: cdk.Duration.minutes(timeout ?? 15),
-                memorySize: memorySize,
+                timeout: cdk.Duration.minutes(props.timeout ?? 15),
+                memorySize: props.memorySize,
                 runtime: this.config.runtime,
-                layers: [this.config.wranglerLayer, this.config.dataLakeLib]
+                layers: [this.config.wranglerLayer, this.config.datalakeLib]
             }
         )
     }
-    protected createLambdaTask(stepName: string, resultPath?: string, memorySize?: number): tasks.LambdaInvoke { 
+    protected createLambdaTask(stepName: string, props: createLambdaTaskProps): tasks.LambdaInvoke { 
 
         return new tasks.LambdaInvoke(
             this,
             `${this.prefix}-${this.team}-${this.pipeline}-${stepName}-task`,
             {
-                lambdaFunction: this.createLambdaFunction(stepName, memorySize),
-                resultPath: resultPath
+                lambdaFunction: this.createLambdaFunction(stepName, {memorySize: props.memorySize}),
+                resultPath: props.resultPath
             }
         )
     }

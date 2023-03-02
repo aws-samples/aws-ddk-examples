@@ -9,7 +9,7 @@ import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as sfn from "aws-cdk-lib/aws-stepfunctions";
 import * as tasks from "aws-cdk-lib/aws-stepfunctions-tasks";
 import * as cr from "aws-cdk-lib/custom-resources";
-import { assignLambdaFunctionProps, StateMachineStage, StateMachineStageProps } from "aws-ddk-core";
+import { LambdaDefaults, StateMachineStage, StateMachineStageProps } from "aws-ddk-core";
 import { Construct } from "constructs";
 
 export interface SDLFHeavyTransformConfig {
@@ -17,30 +17,33 @@ export interface SDLFHeavyTransformConfig {
     pipeline: string;
     stageBucket: s3.IBucket;
     stageBucketKey: kms.IKey;
-    datalakelib: lambda.ILayerVersion;
-    registerprovider: cr.Provider;
-    wranglerlayer: lambda.ILayerVersion;
+    datalakeLib: lambda.ILayerVersion;
+    registerProvider: cr.Provider;
+    wranglerLayer: lambda.ILayerVersion;
     runtime: lambda.Runtime;
 }
 
 export interface SDLFHeavyTransformProps extends StateMachineStageProps {
-    readonly scope: Construct;
-    readonly id: string;
     readonly name: string;
     readonly prefix: string;
     readonly environmentId: string,
     readonly config: SDLFHeavyTransformConfig;
+    readonly props: object;
 }
+
 export class SDLFHeavyTransform extends StateMachineStage {
     readonly targets?: events.IRuleTarget[];
+    readonly stateMachine: sfn.StateMachine;
+    readonly eventPattern?: events.EventPattern;
     readonly config: SDLFHeavyTransformConfig;
     readonly environmentId: string;
     readonly prefix: string;
     readonly team: string;
     readonly pipeline: string;
-    readonly lambdaRole: iam.Role;
-    readonly redriveLambda: lambda.Function;
-    readonly routingLambda: lambda.Function;
+    readonly lambdaRole: iam.IRole;
+    readonly redriveLambda: lambda.IFunction;
+    readonly routingLambda: lambda.IFunction;
+    readonly props: any;
 
     constructor(scope: Construct, id: string, props: SDLFHeavyTransformProps) {
         super(scope, id, props);
@@ -49,6 +52,7 @@ export class SDLFHeavyTransform extends StateMachineStage {
         this.prefix = props.prefix
         this.team = props.config.team
         this.pipeline = props.config.pipeline
+        this.props = props.props;
 
         // register heavy transform details in DDB octagon table
         this.registerOctagonConfig()
@@ -69,16 +73,16 @@ export class SDLFHeavyTransform extends StateMachineStage {
         // build state machine
         this.buildStateMachine(processTask, postupdateTask, errorTask, checkJobTask)
 
-        this.targets = new eventTargets.LambdaFunction(this.routingLambda)
+        this.targets = [new eventTargets.LambdaFunction(this.routingLambda)]
     }
     protected registerOctagonConfig(): void {
-        const serviceSetupProperties = {"RegisterProperties": json.dumps(this.props)}
+        const serviceSetupProperties = {"RegisterProperties": this.props}
 
         new cdk.CustomResource(
             this,
-            `${this.props['id']}-{this.props['type']}-custom-resources   `,
+            `${this.props["id"]}-${this.props.type}-custom-resources`,
             {
-                serviceToken: this.config.registerprovider.serviceToken,
+                serviceToken: this.config.registerProvider.serviceToken,
                 properties: serviceSetupProperties
             }
         )
@@ -193,7 +197,7 @@ export class SDLFHeavyTransform extends StateMachineStage {
         return new lambda.Function(
             this,
             `${this.prefix}-${this.team}-${this.pipeline}-${stepName}-b`,
-            assignLambdaFunctionProps(
+            LambdaDefaults.functionProps(
                 {
                     functionName: `${this.prefix}-${this.team}-${this.pipeline}-${stepName}-b`,
                     code: lambda.Code.fromAsset(
@@ -209,7 +213,7 @@ export class SDLFHeavyTransform extends StateMachineStage {
                     description: `exeute ${stepName} step of heavy transform.`,
                     timeout: cdk.Duration.minutes(15),
                     memorySize: 256,
-                    layers: [this.config.datalakelib, this.config.wranglerlayer],
+                    layers: [this.config.datalakeLib, this.config.wranglerLayer],
                     runtime: this.config.runtime,
                 }
             )

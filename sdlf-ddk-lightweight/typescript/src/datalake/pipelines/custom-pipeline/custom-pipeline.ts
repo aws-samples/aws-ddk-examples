@@ -2,7 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as ssm from "aws-cdk-lib/aws-ssm";
-import { BaseStack, S3EventStage, DataPipeline, assignLambdaFunctionProps, BaseStackProps } from "aws-ddk-core";
+import { BaseStack, S3EventStage, DataPipeline, LambdaDefaults, BaseStackProps } from "aws-ddk-core";
 import { Construct } from "constructs";
 import { FoundationsStack } from "../../foundations";
 import { SDLFLightTransform, SDLFLightTransformConfig } from "../common-stages";
@@ -18,7 +18,7 @@ function getSsmValue(scope: Construct, id: string, parameterName: string): strin
     ).stringValue
 }
 
-export interface CustomDatasetStackProps extends BaseStackProps {
+export interface CustomPipelineProps extends BaseStackProps {
     readonly scope: Construct;
     readonly constructId: string;
     readonly environmentId: string,
@@ -34,6 +34,7 @@ export class CustomPipeline extends BaseStack {
     readonly team: string;
     readonly resourcePrefix: string;
     readonly pipelineId: string;
+    readonly environmentId: string;
     readonly wranglerLayer: lambda.ILayerVersion;
     readonly foundationsStage: FoundationsStack;
     readonly app: string;
@@ -41,10 +42,11 @@ export class CustomPipeline extends BaseStack {
     readonly runtime: lambda.Runtime;
     readonly datalakeLibraryLayerArn: string;
     readonly datalakeLibraryLayer: lambda.ILayerVersion;
-    readonly datalakePipeline: DataPipeline;
-    readonly s3EventCaptureStage: S3EventStage;
+    datalakePipeline: DataPipeline;
+    s3EventCaptureStage: S3EventStage;
+    datalakeLightTransform: SDLFLightTransform;
 
-    constructor(scope: Construct, id: string, props: CustomDatasetStackProps) {
+    constructor(scope: Construct, id: string, props: CustomPipelineProps) {
         super(scope, id, props);
         this.team = props.team
         this.resourcePrefix = props.resourcePrefix
@@ -53,6 +55,7 @@ export class CustomPipeline extends BaseStack {
         this.foundationsStage = props.foundationsStage
         this.app = props.app
         this.org = props.org
+        this.environmentId = props.environmentId
         this.runtime = props.runtime
 
         this.datalakeLibraryLayerArn = getSsmValue(
@@ -83,23 +86,23 @@ export class CustomPipeline extends BaseStack {
             }
         )
 
-        this.dataLakeLightTransform = new SDLFLightTransform(
+        this.datalakeLightTransform = new SDLFLightTransform(
             this,
             `${this.pipelineId}-stage-a`,
             {
                 name: `${this.resourcePrefix}-SDLFLightTransform-${this.team}-${PIPELINE_TYPE}-${this.environmentId}`,
                 prefix: this.resourcePrefix,
-                environmentid: this.environmentId,
+                environmentId: this.environmentId,
                 config: {
                     team: this.team,
-                    pipeline: this.PIPELINETYPE,
+                    pipeline: PIPELINE_TYPE,
                     rawBucket: this.foundationsStage.rawBucket,
                     rawBucketKey: this.foundationsStage.rawBucketKey,
                     stageBucket: this.foundationsStage.stageBucket,
                     stageBucketKey: this.foundationsStage.stageBucketKey,
                     routingLambda: routingFunction,
                     datalakeLib: this.datalakeLibraryLayer,
-                    registerprovider: this.foundationsStage.registerProvider,
+                    registerProvider: this.foundationsStage.registerProvider,
                     wranglerLayer: this.wranglerLayer,
                     runtime: lambda.Runtime.PYTHON_3_9
                 },
@@ -124,9 +127,8 @@ export class CustomPipeline extends BaseStack {
                 description: `${this.resourcePrefix} data lake pipeline`,
                 }
             )
-            .addStage(this.s3EventCaptureStage)
-            .addstage(this.datalakeLightTransform, {skipRule: true}) // configure rule on registerDataset() call
-        )
+            .addStage({stage: this.s3EventCaptureStage})
+            .addStage({stage: this.datalakeLightTransform, skipRule: true})
     }
     protected createRoutingLambda(): lambda.IFunction {
         const routingFunction = new lambda.Function(
@@ -138,10 +140,10 @@ export class CustomPipeline extends BaseStack {
                 handler: "handler.lambdahandler",
                 description: "routes to the right team and pipeline",
                 timeout: cdk.Duration.seconds(60),
-                memorysize: 256,
+                memorySize: 256,
                 runtime: this.runtime,
                 environment: {
-                    "ENV": this.environmentid,
+                    "ENV": this.environmentId,
                     "APP": this.app,
                     "ORG": this.org,
                     "PREFIX": this.resourcePrefix
@@ -213,21 +215,19 @@ export class CustomPipeline extends BaseStack {
         )
         return routingFunction
     }
-    protected registerDataset(dataset: string, config: object): void {
+    protected registerDataset(dataset: string, config: any): void {
          // Create dataset stack
-        const stageATransform = config.get("stageatransform", "sdlflighttransform")
+        const stageATransform = config["stage_a_transform"] ?? "sdlf_light_transform"
 
         new CustomDatasetStack(
             this,
             `${this.team}-${PIPELINE_TYPE}-${dataset}-dataset-stage`,
             {
-                scope: this,
-
                 resourcePrefix: this.resourcePrefix,
                 config: {
                     team: this.team,
                     dataset: dataset,
-                    pipeline: this.PIPELINETYPE,
+                    pipeline: PIPELINE_TYPE,
                     stageATransform: stageATransform,
                     registerProvider: this.foundationsStage.registerProvider
                 }
@@ -236,7 +236,7 @@ export class CustomPipeline extends BaseStack {
 
         // Add S3 object created event pattern
         const baseEventPattern = this.s3EventCaptureStage.eventPattern
-        if (baseEventPattern.detail) } {
+        if (baseEventPattern && baseEventPattern.detail) {
             baseEventPattern.detail["object"] = {
                 "key": [
                     {
@@ -247,9 +247,10 @@ export class CustomPipeline extends BaseStack {
         }
 
         this.datalakePipeline.addRule(
-            `${this.pipelineid}-${dataset}-rule`,
-            eventPattern: baseeventpattern,
-            eventTargets: this.datalakeLightTransform.getTargets()
+            {
+                eventPattern: baseEventPattern,
+                eventTargets: this.datalakeLightTransform.targets
+            }
         )
     }
 

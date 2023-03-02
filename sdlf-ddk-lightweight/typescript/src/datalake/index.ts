@@ -1,1 +1,2 @@
-export * from "pipelines/";
+export * from "./pipelines";
+export * from "./foundations";
