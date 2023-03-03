@@ -1,3 +1,4 @@
+import * as path from "path";
 import { readFileSync } from "fs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as ssm from "aws-cdk-lib/aws-ssm";
@@ -9,13 +10,6 @@ import { StandardPipeline } from "./standard-pipeline";
 import { CustomPipeline } from "./custom-pipeline";
 
 
-
-// class SDLFPipeline(Protocol):
-
-//     PIPELINETYPE: str
-
-//     def registerdataset(this, dataset: str, config: Dict[str, Any]):
-//         ...
 
 export interface SDLFBaseStackProps extends BaseStackProps {
     environmentId: string;
@@ -37,7 +31,7 @@ export class SDLFBaseStack extends BaseStack {
         this.params = props.params;
         this.app = this.params.app ?? "datalake";
         this.org = this.params.org ?? "aws";
-        const customerConfigs = JSON.parse(readFileSync("./src/pipelines/parameters.json", "utf-8")).environmentId;
+        const customerConfigs: any = JSON.parse(readFileSync("./src/pipelines/parameters.json", "utf-8"));
 
         this.wranglerLayer = this.createWranglerLayer()
         this.createDatalakeLibraryLayer()
@@ -56,65 +50,66 @@ export class SDLFBaseStack extends BaseStack {
             }
         )
 
-        //const datasetNames: set[str] = set()
-        //const pipelines: Dict[str, SDLFPipeline] = {}
-        // # loop through values in parameters.json and create the necessary resources for each pipeline
-        // for customerconfig in customerconfigs:
-        //     dataset = customerconfig["dataset"]
-        //     team = customerconfig["team"]
-        //     pipelinetype = customerconfig.get("pipeline", StandardPipeline.PIPELINETYPE)
+        const datasetNames: any = []
+        const pipelines: any = {}
+        
+        // loop through values in parameters.json and create the necessary resources for each pipeline
+        customerConfigs.environmentId.forEach( (customerConfig: any) => {
+            const dataset = customerConfig.dataset
+            const team = customerConfig.team
+            const pipelineType = customerConfig.pipeline ?? "standard"
 
-        //     # PIPELINE CREATION
-        //     pipeline: SDLFPipeline
-        //     pipelinename = f"{team}-{pipelinetype}"
-        //     if pipelinename not in pipelines:
-        //         if pipelinetype == StandardPipeline.PIPELINETYPE:
-        //             pipeline = StandardPipeline(
-        //                 this,
-        //                 constructid=f"{team}-{pipelinetype}",
-        //                 environmentId=this.environmentId,
-        //                 resourcePrefix=this.resourcePrefix,
-        //                 team=team,
-        //                 foundationsstage=this.foundationsstage,
-        //                 wranglerlayer=this.wranglerlayer,
-        //                 app=this.app,
-        //                 org=this.org,
-        //                 runtime=lambda.Runtime.PYTHON39
-        //             )
-        //         elif pipelinetype == CustomPipeline.PIPELINETYPE:
-        //             pipeline = CustomPipeline(
-        //                 this,
-        //                 constructid=f"{team}-{pipelinetype}",
-        //                 environmentId=this.environmentId,
-        //                 resourcePrefix=this.resourcePrefix,
-        //                 team=team,
-        //                 foundationsstage=this.foundationsstage,
-        //                 wranglerlayer=this.wranglerlayer,
-        //                 app=this.app,
-        //                 org=this.org,
-        //                 runtime=lambda.Runtime.PYTHON39
-        //             )
-        //         else:
-        //             raise NotImplementedError(
-        //                 f"Could not find a valid implementation for pipeline type: {pipelinetype}"
-        //             )
-        //         pipelines[pipelinename] = pipeline
-        //     else:
-        //         pipeline = pipelines[pipelinename]
-
-        //     # Register dataset to pipeline with concrete implementations
-        //     datasetname = f"{team}-{dataset}"
-        //     if datasetname not in datasetnames:
-        //         datasetnames.add(datasetname)
-        //         pipeline.registerdataset(
-        //             dataset,
-        //             config=customerconfig.get("config", {})
-        //         )
+        // PIPELINE CREATION
+            const pipelineName = `${team}-${pipelineType}`
+            var pipeline: StandardPipeline | CustomPipeline;
+            if (pipelineType == "standard") {
+                pipeline = new StandardPipeline(
+                    this,
+                    `${team}-${pipelineType}`,
+                    {
+                        environmentId: props.environmentId,
+                        resourcePrefix: this.resourcePrefix,
+                        team: team,
+                        foundationsStage: this.foundationsStage,
+                        wranglerLayer: this.wranglerLayer,
+                        app: this.app,
+                        org: this.org,
+                        runtime: lambda.Runtime.PYTHON_3_9
+                    }
+                )
+            }
+            else if (pipelineType == "custom"){
+                pipeline = new CustomPipeline(
+                    this,
+                    `${team}-${pipelineType}`,
+                    {
+                        environmentId: props.environmentId,
+                        resourcePrefix: this.resourcePrefix,
+                        team: team,
+                        foundationsStage: this.foundationsStage,
+                        wranglerLayer: this.wranglerLayer,
+                        app: this.app,
+                        org: this.org,
+                        runtime: lambda.Runtime.PYTHON_3_9
+                    }
+                )
+            }
+            else {
+                throw new Error(`Could not find a valid implementation for pipeline type: ${pipelineType}`);
+            }
+            pipelines[pipelineName] = pipeline
 
 
-
-
-
+            // Register dataset to pipeline with concrete implementations
+            const datasetName = `${team}-${dataset}`;
+            if (!datasetName.includes(datasetName)) {
+                datasetNames.add(datasetName)
+                pipeline.registerDataset(
+                    dataset,
+                    customerConfig.config ?? {}
+                )
+            }
+        }
     }
     protected createWranglerLayer(): lambda.ILayerVersion {
         return lambda.LayerVersion.fromLayerVersionArn(
@@ -122,7 +117,6 @@ export class SDLFBaseStack extends BaseStack {
             "wrangler-layer",
             `arn:aws:lambda:${this.region}:336392948345:layer:AWSDataWrangler-Python39:1`,
         )
-
     }
     protected createDatalakeLibraryLayer(): void {
         const datalakeLibraryLayer = new lambda.LayerVersion(
@@ -130,9 +124,9 @@ export class SDLFBaseStack extends BaseStack {
             "data-lake-library-layer",
             {
                 layerVersionName: "data-lake-library",
-                code: lambda.Code.fromasset(
-                    os.path.join(
-                        f"{Path(file).parents[1]}", "src/layers/datalakelibrary"
+                code: lambda.Code.fromAsset(
+                    path.join(
+                        __dirname, "src/layers/datalakelibrary"
                     )
                 ),
                 compatibleRuntimes: [lambda.Runtime.PYTHON_3_9],

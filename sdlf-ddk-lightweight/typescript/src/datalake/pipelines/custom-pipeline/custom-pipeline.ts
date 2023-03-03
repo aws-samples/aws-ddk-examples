@@ -19,8 +19,6 @@ function getSsmValue(scope: Construct, id: string, parameterName: string): strin
 }
 
 export interface CustomPipelineProps extends BaseStackProps {
-    readonly scope: Construct;
-    readonly constructId: string;
     readonly environmentId: string,
     readonly resourcePrefix: string;
     readonly team: string;

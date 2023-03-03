@@ -25,8 +25,6 @@ function getSsmValue(scope: Construct, id: string, parameterName: string): strin
 }
 
 export interface StandardPipelineProps extends BaseStackProps {
-    readonly scope: Construct;
-    readonly constructId: string;
     readonly environmentId: string;
     readonly resourcePrefix: string;
     readonly team: string;
@@ -253,50 +251,50 @@ export class StandardPipeline extends BaseStack {
         )
         return routingFunction
     }
-    protected  registerdataset(dataset: string, config: StandardDatasetConfig): void {
-    // Create dataset stack
-    const stageATransform = config.stageATransform ?? "sdlf_light_transform"
-    const stageBTransform = config.stageBTransform ?? "sdlf_heavy_transform"
+    protected registerDataset(dataset: string, config: StandardDatasetConfig): void {
+        // Create dataset stack
+        const stageATransform = config.stageATransform ?? "sdlf_light_transform"
+        const stageBTransform = config.stageBTransform ?? "sdlf_heavy_transform"
 
-    new StandardDatasetStack(
-        this,
-        `${this.team}-${PIPELINE_TYPE}-${dataset}-dataset-stage`,
-        {
-            environmentId: this.environmentId,
-            resourcePrefix: this.resourcePrefix,
-            config: {
-                team: this.team,
-                dataset: dataset,
-                pipeline: PIPELINE_TYPE,
-                app: this.app,
-                org: this.org,
-                routingB: this.routingB,
-                stageATransform: stageATransform,
-                stageBTransform: stageBTransform,
-                artifactsBucket: this.foundationsStage.artifactsBucket,
-                artifactsBucketKey: this.foundationsStage.artifactsBucketKey,
-                stageBucket: this.foundationsStage.stageBucket,
-                stageBucketKey: this.foundationsStage.stageBucketKey,
-                glueRole: this.foundationsStage.glueRole,
-                registerProvider: this.foundationsStage.registerProvider
+        new StandardDatasetStack(
+            this,
+            `${this.team}-${PIPELINE_TYPE}-${dataset}-dataset-stage`,
+            {
+                environmentId: this.environmentId,
+                resourcePrefix: this.resourcePrefix,
+                config: {
+                    team: this.team,
+                    dataset: dataset,
+                    pipeline: PIPELINE_TYPE,
+                    app: this.app,
+                    org: this.org,
+                    routingB: this.routingB,
+                    stageATransform: stageATransform,
+                    stageBTransform: stageBTransform,
+                    artifactsBucket: this.foundationsStage.artifactsBucket,
+                    artifactsBucketKey: this.foundationsStage.artifactsBucketKey,
+                    stageBucket: this.foundationsStage.stageBucket,
+                    stageBucketKey: this.foundationsStage.stageBucketKey,
+                    glueRole: this.foundationsStage.glueRole,
+                    registerProvider: this.foundationsStage.registerProvider
+                }
+            }
+        )
+
+        // Add S3 object created event pattern
+        const baseEventPattern = this.s3EventCaptureStage.eventPattern
+        if (baseEventPattern && baseEventPattern.detail) {
+            baseEventPattern.detail["object"] = { 
+                "key": [{"prefix": `${this.team}/{dataset}/`}]
             }
         }
-    )
 
-    // Add S3 object created event pattern
-    const baseEventPattern = this.s3EventCaptureStage.eventPattern
-    if (baseEventPattern && baseEventPattern.detail) {
-        baseEventPattern.detail["object"] = { 
-            "key": [{"prefix": `${this.team}/{dataset}/`}]
-        }
-    }
-
-    this.datalakePipeline.addRule(
-        {
-            eventPattern: baseEventPattern,
-            eventTargets: this.datalakeLightTransform.targets
-        }
-    )
+        this.datalakePipeline.addRule(
+            {
+                eventPattern: baseEventPattern,
+                eventTargets: this.datalakeLightTransform.targets
+            }
+        )
     }
 }
 
