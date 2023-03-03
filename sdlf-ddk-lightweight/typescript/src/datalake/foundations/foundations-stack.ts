@@ -60,15 +60,15 @@ export class FoundationsStack extends BaseStack {
 
     this.datasets = this.createOctagonTable({
       name: `octagon-Datasets-${props.environmentId}`,
-      partitionKey: {"partition_key": {name: "name", type: dynamo.AttributeType.STRING}},
+      partitionKey: {name: "name", type: dynamo.AttributeType.STRING},
     })
     this.pipelines = this.createOctagonTable({
       name: `octagon-Pipelines-${props.environmentId}`,
-      partitionKey: {"partition_key": {name: "name", type: dynamo.AttributeType.STRING}},
+      partitionKey: {name: "name", type: dynamo.AttributeType.STRING},
     })
     this.peh = this.createOctagonTable({
       name: `octagon-PipelineExecutionHistory-${props.environmentId}`,
-      partitionKey: {"partition_key": {name: "id", type: dynamo.AttributeType.STRING}},
+      partitionKey: {name: "id", type: dynamo.AttributeType.STRING},
     })
     this.createRegister(props.runtime)
 

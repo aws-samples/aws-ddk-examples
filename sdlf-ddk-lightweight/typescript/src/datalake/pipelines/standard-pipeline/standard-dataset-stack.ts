@@ -114,23 +114,23 @@ export class StandardDatasetStack extends BaseStack {
             this,
             `${this.resourcePrefix}-heavy-transform-${team}-${datasetName}-job`,
             {
-            name: `${this.resourcePrefix}-${team}-${datasetName}-glue-job`,
-            glueVersion: "2.0",
-            allocatedCapacity: 2,
-            executionProperty: {
-                maxConcurrentRuns: 4
-            },
-            command: {
-                name: "glueetl",
-                scriptLocation: `s3://{this.datasetConfig.artifactsBucket.bucketname}/{codePath}`,
-            },
-            defaultArguments: {
-                "--job-bookmark-option": "job-bookmark-enable",
-                "--enable-metrics": "",
-                "--additional-python-modules": "awswrangler==2.4.0",
-                "--enable-glue-datacatalog": ""
-            },
-            role: this.datasetConfig.glueRole.roleArn,
+                name: `${this.resourcePrefix}-${team}-${datasetName}-glue-job`,
+                glueVersion: "2.0",
+                allocatedCapacity: 2,
+                executionProperty: {
+                    maxConcurrentRuns: 4
+                },
+                command: {
+                    name: "glueetl",
+                    scriptLocation: `s3://{this.datasetConfig.artifactsBucket.bucketname}/{codePath}`,
+                },
+                defaultArguments: {
+                    "--job-bookmark-option": "job-bookmark-enable",
+                    "--enable-metrics": "",
+                    "--additional-python-modules": "awswrangler==2.4.0",
+                    "--enable-glue-datacatalog": ""
+                },
+                role: this.datasetConfig.glueRole.roleArn,
             }
         )
     }
