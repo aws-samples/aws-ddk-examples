@@ -103,8 +103,8 @@ export class FoundationsStack extends BaseStack {
       this,
       `${props.name}-table-key`,
       {
-        description: `${this.resourcePrefix} ${props.name} Table Key`,
-        alias: `${this.resourcePrefix} ${props.name} Table Key`,
+        description: `${this.resourcePrefix}${props.name} Table Key`,
+        alias: `${this.resourcePrefix}-${props.name}-ddb-table-key`,
         enableKeyRotation: true,
         pendingWindow: cdk.Duration.days(30),
         removalPolicy: cdk.RemovalPolicy.DESTROY
@@ -139,7 +139,7 @@ export class FoundationsStack extends BaseStack {
       "register-function",
       LambdaDefaults.functionProps(
         {
-          code: lambda.Code.fromAsset(path.join(__dirname, "src/lambdas/register/")),
+          code: lambda.Code.fromAsset(path.join(__dirname, "../src/lambdas/register/")),
           handler: "handler.on_event",
           memorySize: 256,
           description: "Registers Datasets, Pipelines and Stages into their respective DynamoDB tables",
@@ -167,10 +167,10 @@ export class FoundationsStack extends BaseStack {
   private createBucket(name: string): [s3.Bucket, kms.Key] {
     const bucketKey = new kms.Key(
       this,
-      `${this.resourcePrefix}-$${name}-bucket-key`,
+      `${this.resourcePrefix}-${name}-bucket-key`,
       {
-        description: `${this.resourcePrefix} $${name} Bucket Key`,
-        alias: `${this.resourcePrefix}-$${name}-bucket-key`,
+        description: `${this.resourcePrefix} ${name} Bucket Key`,
+        alias: `${this.resourcePrefix}-${name}-bucket-key`,
         enableKeyRotation: true,
         pendingWindow: cdk.Duration.days(30),
         removalPolicy: cdk.RemovalPolicy.DESTROY
@@ -180,14 +180,14 @@ export class FoundationsStack extends BaseStack {
       this,
       `${this.resourcePrefix}-$${name}-bucket-key-arn-ssm`,
       {
-        parameterName: `/SDLF/KMS/$${name}BucketKeyArn`,
+        parameterName: `/SDLF/KMS/${name}BucketKeyArn`,
         stringValue: bucketKey.keyArn,
       }
     )
 
     const bucket = new s3.Bucket(
         this,
-        `${this.resourcePrefix}-$${name}-bucket`,
+        `${this.resourcePrefix}-${name}-bucket`,
         S3Defaults.bucketProps(
           {
             bucketName: `${this.resourcePrefix}-${this.environmentId}-${cdk.Aws.REGION}-${cdk.Aws.ACCOUNT_ID}-$${name}`,
@@ -303,7 +303,7 @@ export class FoundationsStack extends BaseStack {
       this,
       `${this.resourcePrefix}-glue-script-s3-deployment`,
       {
-        sources: [s3Deployment.Source.asset(gluePath)],
+        sources: [s3Deployment.Source.asset(path.join(__dirname, "../src/glue/"))],
         destinationBucket: this.artifactsBucket,
         destinationKeyPrefix: gluePath,
         serverSideEncryptionAwsKmsKeyId: this.artifactsBucketKey.keyId,

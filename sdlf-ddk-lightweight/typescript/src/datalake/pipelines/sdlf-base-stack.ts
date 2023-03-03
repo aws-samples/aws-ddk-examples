@@ -31,7 +31,7 @@ export class SDLFBaseStack extends BaseStack {
         this.params = props.params;
         this.app = this.params.app ?? "datalake";
         this.org = this.params.org ?? "aws";
-        const customerConfigs: any = JSON.parse(readFileSync("./src/pipelines/parameters.json", "utf-8"));
+        const customerConfigs: any = JSON.parse(readFileSync("./src/datalake/pipelines/parameters.json", "utf-8"));
 
         this.wranglerLayer = this.createWranglerLayer()
         this.createDatalakeLibraryLayer()
@@ -52,9 +52,8 @@ export class SDLFBaseStack extends BaseStack {
 
         const datasetNames: any = []
         const pipelines: any = {}
-        
         // loop through values in parameters.json and create the necessary resources for each pipeline
-        customerConfigs.environmentId.forEach( (customerConfig: any) => {
+        customerConfigs[props.environmentId].forEach( (customerConfig: any)  => {
             const dataset = customerConfig.dataset
             const team = customerConfig.team
             const pipelineType = customerConfig.pipeline ?? "standard"
@@ -109,7 +108,7 @@ export class SDLFBaseStack extends BaseStack {
                     customerConfig.config ?? {}
                 )
             }
-        }
+        });
     }
     protected createWranglerLayer(): lambda.ILayerVersion {
         return lambda.LayerVersion.fromLayerVersionArn(
@@ -126,7 +125,7 @@ export class SDLFBaseStack extends BaseStack {
                 layerVersionName: "data-lake-library",
                 code: lambda.Code.fromAsset(
                     path.join(
-                        __dirname, "src/layers/datalakelibrary"
+                        __dirname, "../src/layers/data_lake_library"
                     )
                 ),
                 compatibleRuntimes: [lambda.Runtime.PYTHON_3_9],

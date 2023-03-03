@@ -1,3 +1,4 @@
+import * as path from "path";
 import * as cdk from "aws-cdk-lib";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
@@ -134,7 +135,9 @@ export class CustomPipeline extends BaseStack {
             `${this.resourcePrefix}-${this.team}-${PIPELINE_TYPE}-pipeline-routing-function`,
             {
                 functionName: `${this.resourcePrefix}-${this.team}-${PIPELINE_TYPE}-pipeline-routing`,
-                code: lambda.Code.fromAsset("datalake/src/lambdas/routing"),
+                code: lambda.Code.fromAsset(
+                    path.join(__dirname, "../../src/lambdas/routing/")
+                ),
                 handler: "handler.lambdahandler",
                 description: "routes to the right team and pipeline",
                 timeout: cdk.Duration.seconds(60),
@@ -213,7 +216,7 @@ export class CustomPipeline extends BaseStack {
         )
         return routingFunction
     }
-    protected registerDataset(dataset: string, config: any): void {
+    public registerDataset(dataset: string, config: any): void {
          // Create dataset stack
         const stageATransform = config["stage_a_transform"] ?? "sdlf_light_transform"
 

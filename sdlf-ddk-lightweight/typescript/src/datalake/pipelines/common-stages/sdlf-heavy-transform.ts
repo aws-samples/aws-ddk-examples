@@ -1,3 +1,4 @@
+import * as path from "path";
 import * as cdk from "aws-cdk-lib";
 import * as events from "aws-cdk-lib/aws-events";
 import * as eventTargets from "aws-cdk-lib/aws-events-targets";
@@ -78,14 +79,16 @@ export class SDLFHeavyTransform extends StateMachineStage {
     protected registerOctagonConfig(): void {
         const serviceSetupProperties = {"RegisterProperties": this.props}
 
-        new cdk.CustomResource(
-            this,
-            `${this.props["id"]}-${this.props.type}-custom-resources`,
-            {
-                serviceToken: this.config.registerProvider.serviceToken,
-                properties: serviceSetupProperties
-            }
-        )
+        if (this.config.registerProvider) {
+            new cdk.CustomResource(
+                this,
+                `${this.props["id"]}-${this.props.type}-custom-resources`,
+                {
+                    serviceToken: this.config.registerProvider.serviceToken,
+                    properties: serviceSetupProperties
+                }
+            )
+        }
     }
     protected createLambdaRole(): iam.IRole {
         const role = new iam.Role(
@@ -201,7 +204,7 @@ export class SDLFHeavyTransform extends StateMachineStage {
                 {
                     functionName: `${this.prefix}-${this.team}-${this.pipeline}-${stepName}-b`,
                     code: lambda.Code.fromAsset(
-                        `datalake/src/lambdas/sdlfheavytransform/${stepName}`
+                        path.join(__dirname, `../../src/lambdas/sdlf_heavy_transform/${stepName}`)
                     ),
                     handler: "handler.lambdahandler",
                     environment: {
@@ -302,13 +305,15 @@ export class SDLFHeavyTransform extends StateMachineStage {
                 ]
             }
         )
-        new ssm.StringParameter(
-            this,
-            `${this.prefix}-${this.team}-${this.pipeline}-state-machine-b-ssm`,
-            {
-                parameterName: `/SDLF/SM/${this.team}/${this.pipeline}StageBSM`,
-                stringValue: this.stateMachine.stateMachineArn
-            }   
-        )
+        if (this.stateMachine) {
+            new ssm.StringParameter(
+                this,
+                `${this.prefix}-${this.team}-${this.pipeline}-state-machine-b-ssm`,
+                {
+                    parameterName: `/SDLF/SM/${this.team}/${this.pipeline}StageBSM`,
+                    stringValue: this.stateMachine.stateMachineArn
+                }   
+            )
+        }
     }
 }
