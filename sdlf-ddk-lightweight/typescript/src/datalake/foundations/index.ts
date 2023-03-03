@@ -1,1 +1,1 @@
-export * from "./foundations-stack";
+export * from './foundations-stack';
