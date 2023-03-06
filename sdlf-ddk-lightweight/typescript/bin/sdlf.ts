@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
-import { BaseStack, CICDPipelineStack, Configurator} from "aws-ddk-core";
+import * as codecommit from 'aws-cdk-lib/aws-codecommit';
+import { BaseStack, CICDPipelineStack, Configurator, getConfig} from "aws-ddk-core";
 import { Construct } from 'constructs';
 
 import { SDLFBaseStack } from "../src/datalake/pipelines";
@@ -14,7 +15,7 @@ class DataLakeFrameworkCICD extends cdk.Stage {
   constructor(scope: Construct, pipelineParams: any, environmentId: string, props: cdk.StageProps) {
     super(scope, `sdlf-ddk-${environmentId}`, props);
       this.environmentId = environmentId;
-      this.resourcePrefix = pipelineParams["resource_prefix"] 
+      this.resourcePrefix = pipelineParams.resource_prefix
         ? pipelineParams["resource_prefix"] 
         : "ddk";
       this.sdlfParameters = pipelineParams["data_pipeline_parameters"] 
@@ -53,13 +54,12 @@ export class DataLakeFramework extends BaseStack {  // For NO CICD deployments
   }
 }
 
-
 const satelliteApp = new cdk.App()
 const cicdConfig = new Configurator(satelliteApp, "./ddk.json", "cicd")
 const devConfig = new Configurator(satelliteApp, "./ddk.json", "dev")
 const pipelineName = "sdlf-ddk-pipeline"
-const cicdRepositoryName = cicdConfig.getEnvConfig("repository") ?? "sdlf-ddk-example";
-const cicdEnabled = cicdConfig.getEnvConfig("cicd_enabled") ?? false;
+const cicdRepositoryName = cicdConfig.getConfigAttribute("repository") ?? "sdlf-ddk-example";
+const cicdEnabled = cicdConfig.getConfigAttribute("cicd_enabled") ?? false;
 
 if (cicdEnabled) {
     const pipeline = new CICDPipelineStack(
@@ -78,7 +78,7 @@ if (cicdEnabled) {
       stageId: "dev",
       stage: new DataLakeFrameworkCICD(
           satelliteApp,
-          devConfig.getEnvConfig("dev"),
+          getConfig({}).environments.dev,
           "dev",
           {},
       ),
