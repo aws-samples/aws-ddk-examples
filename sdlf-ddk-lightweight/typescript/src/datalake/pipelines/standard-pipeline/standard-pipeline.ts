@@ -126,7 +126,7 @@ export class StandardPipeline extends BaseStack {
           version: 1,
           status: 'ACTIVE',
           name: `${this.team}-${PIPELINE_TYPE}-stage-a`,
-          type: 'octagonpipeline',
+          type: 'octagon_pipeline',
           description: `${this.resourcePrefix} data lake light transform`,
           id: `${this.team}-${PIPELINE_TYPE}-stage-a`
         },
@@ -155,8 +155,8 @@ export class StandardPipeline extends BaseStack {
           version: 1,
           status: 'ACTIVE',
           name: `${this.team}-${PIPELINE_TYPE}-stage-b`,
-          type: 'octagonpipeline',
-          description: `$ {this.resourcePrefix} data lake heavy transform`,
+          type: 'octagon_pipeline',
+          description: `${this.resourcePrefix} data lake heavy transform`,
           id: `${this.team}-${PIPELINE_TYPE}-stage-b`
         },
         description: `${this.resourcePrefix} data lake heavy transform`
@@ -183,7 +183,7 @@ export class StandardPipeline extends BaseStack {
         code: lambda.Code.fromAsset(
           path.join(__dirname, '../../src/lambdas/routing')
         ),
-        handler: 'handler.lambdahandler',
+        handler: 'handler.lambda_handler',
         description: 'routes to the right team and pipeline',
         timeout: cdk.Duration.seconds(60),
         memorySize: 256,
@@ -239,7 +239,7 @@ export class StandardPipeline extends BaseStack {
           'sqs:ListQueueTags'
         ],
         resources: [
-          `arn:aws:sqs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:{this.resourcePrefix}-*`
+          `arn:aws:sqs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:${this.resourcePrefix}-*`
         ]
       })
     );
@@ -290,7 +290,9 @@ export class StandardPipeline extends BaseStack {
     );
 
     // Add S3 object created event pattern
-    const baseEventPattern = JSON.parse(JSON.stringify(this.s3EventCaptureStage.eventPattern));
+    const baseEventPattern = JSON.parse(
+      JSON.stringify(this.s3EventCaptureStage.eventPattern)
+    );
     if (baseEventPattern && baseEventPattern.detail) {
       baseEventPattern.detail['object'] = {
         key: [{ prefix: `${this.team}/${dataset}/` }]

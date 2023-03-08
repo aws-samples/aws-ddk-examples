@@ -64,7 +64,7 @@ export class CustomDatasetStack extends BaseStack {
       `${props['id']}-${props['type']}-custom-resource`,
       {
         serviceToken: this.datasetConfig.registerProvider.serviceToken,
-        properties: { RegisterProperties: props }
+        properties: { RegisterProperties: JSON.stringify(props) }
       }
     );
   }

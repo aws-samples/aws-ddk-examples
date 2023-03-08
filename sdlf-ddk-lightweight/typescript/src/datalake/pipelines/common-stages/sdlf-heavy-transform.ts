@@ -86,7 +86,9 @@ export class SDLFHeavyTransform extends StateMachineStage {
     this.targets = [new eventTargets.LambdaFunction(this.routingLambda)];
   }
   protected registerOctagonConfig(): void {
-    const serviceSetupProperties = { RegisterProperties: this.props };
+    const serviceSetupProperties = {
+      RegisterProperties: JSON.stringify(this.props)
+    };
 
     if (this.config.registerProvider) {
       new cdk.CustomResource(
@@ -218,7 +220,7 @@ export class SDLFHeavyTransform extends StateMachineStage {
             `../../src/lambdas/sdlf_heavy_transform/${stepName}`
           )
         ),
-        handler: 'handler.lambdahandler',
+        handler: 'handler.lambda_handler',
         environment: {
           TEAM: this.team,
           PIPELINE: this.pipeline,
@@ -318,7 +320,7 @@ export class SDLFHeavyTransform extends StateMachineStage {
     });
     errorTask.next(failState);
 
-    this.createStateMachine(parallelState, {
+    const createStateMachine = this.createStateMachine(parallelState, {
       additionalRolePolicyStatements: [
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
@@ -329,15 +331,13 @@ export class SDLFHeavyTransform extends StateMachineStage {
         })
       ]
     });
-    if (this.stateMachine) {
-      new ssm.StringParameter(
-        this,
-        `${this.prefix}-${this.team}-${this.pipeline}-state-machine-b-ssm`,
-        {
-          parameterName: `/SDLF/SM/${this.team}/${this.pipeline}StageBSM`,
-          stringValue: this.stateMachine.stateMachineArn
-        }
-      );
-    }
+    new ssm.StringParameter(
+      this,
+      `${this.prefix}-${this.team}-${this.pipeline}-state-machine-b-ssm`,
+      {
+        parameterName: `/SDLF/SM/${this.team}/${this.pipeline}StageBSM`,
+        stringValue: createStateMachine.stateMachine.stateMachineArn
+      }
+    );
   }
 }

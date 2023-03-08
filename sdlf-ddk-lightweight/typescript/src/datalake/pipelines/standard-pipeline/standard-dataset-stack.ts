@@ -74,8 +74,6 @@ export class StandardDatasetStack extends BaseStack {
       this.stageBTransform
     );
     this.database = this.createGlueDatabase(this.team, this.dataset);
-    console.log("debug db")
-    console.log(this.database)
     this.createRoutingQueue();
 
     // Add stage b scheduled rule every 5 minutes
@@ -118,7 +116,7 @@ export class StandardDatasetStack extends BaseStack {
         },
         command: {
           name: 'glueetl',
-          scriptLocation: `s3://{this.datasetConfig.artifactsBucket.bucketname}/{codePath}`
+          scriptLocation: `s3://${this.datasetConfig.artifactsBucket.bucketName}/{codePath}`
         },
         defaultArguments: {
           '--job-bookmark-option': 'job-bookmark-enable',
@@ -161,7 +159,9 @@ export class StandardDatasetStack extends BaseStack {
       }
     };
 
-    const serviceSetupProperties = { RegisterProperties: props };
+    const serviceSetupProperties = {
+      RegisterProperties: JSON.stringify(props)
+    };
 
     new cdk.CustomResource(
       this,
@@ -193,8 +193,8 @@ export class StandardDatasetStack extends BaseStack {
       `${this.resourcePrefix}-${team}-${datasetName}-database`,
       {
         databaseInput: {
-          name: `awsdatalake{this.environmentId}${team}${datasetName}db`,
-          locationUri: `s3://{this.datasetConfig.stagebucket.bucketname}/post-stage/${team}/${datasetName}`
+          name: `awsdatalake${this.environmentId}${team}${datasetName}db`,
+          locationUri: `s3://${this.datasetConfig.stageBucket.bucketName}/post-stage/${team}/${datasetName}`
         },
         catalogId: cdk.Aws.ACCOUNT_ID
       }
@@ -209,10 +209,10 @@ export class StandardDatasetStack extends BaseStack {
         },
         resource: {
           databaseResource: {
-            name: this.database.ref
+            name: database.ref
           }
         },
-        permissions: ['CREATETABLE', 'ALTER', 'DROP']
+        permissions: ['CREATE_TABLE', 'ALTER', 'DROP']
       }
     );
     return database;

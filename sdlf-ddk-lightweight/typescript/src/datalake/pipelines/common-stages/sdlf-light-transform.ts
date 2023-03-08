@@ -76,16 +76,14 @@ export class SDLFLightTransform extends StateMachineStage {
     this.prefix = props.prefix;
     this.props = props.props;
 
-    const serviceSetupProperties = { RegisterProperties: this.props };
+    const serviceSetupProperties = {
+      RegisterProperties: JSON.stringify(this.props)
+    };
     if (this.config.registerProvider) {
-      new cdk.CustomResource(
-        this,
-        `${id}-custom-resource`,
-        {
-          serviceToken: this.config.registerProvider.serviceToken,
-          properties: serviceSetupProperties
-        }
-      );
+      new cdk.CustomResource(this, `${id}-custom-resource`, {
+        serviceToken: this.config.registerProvider.serviceToken,
+        properties: serviceSetupProperties
+      });
     }
     this.pipeline = this.config.pipeline;
     this.team = this.config.team;
@@ -349,7 +347,7 @@ export class SDLFLightTransform extends StateMachineStage {
             `../../src/lambdas/sdlf_light_transform/${stepName}`
           )
         ),
-        handler: 'handler.lambdahandler',
+        handler: 'handler.lambda_handler',
         environment: {
           stagebucket: `${this.prefix}-${this.environmentId}-${cdk.Aws.REGION}-${cdk.Aws.ACCOUNT_ID}-stage`,
           TEAM: this.team,
@@ -414,7 +412,7 @@ export class SDLFLightTransform extends StateMachineStage {
 
     errorTask.next(failState);
 
-    this.createStateMachine(parallelState, {
+    const createStateMachine = this.createStateMachine(parallelState, {
       additionalRolePolicyStatements: [
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
@@ -425,15 +423,13 @@ export class SDLFLightTransform extends StateMachineStage {
         })
       ]
     });
-    if (this.stateMachine) {
-      new ssm.StringParameter(
-        this,
-        `${this.prefix}-${this.team}-${this.pipeline}-state-machine-a-ssm`,
-        {
-          parameterName: `/SDLF/SM/${this.team}/${this.pipeline}StageASM`,
-          stringValue: this.stateMachine.stateMachineArn
-        }
-      );
-    }
+    new ssm.StringParameter(
+      this,
+      `${this.prefix}-${this.team}-${this.pipeline}-state-machine-a-ssm`,
+      {
+        parameterName: `/SDLF/SM/${this.team}/${this.pipeline}StageASM`,
+        stringValue: createStateMachine.stateMachine.stateMachineArn
+      }
+    );
   }
 }
