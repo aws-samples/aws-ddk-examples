@@ -13,7 +13,7 @@ export interface CustomDatasetConfig {
 
 export interface CustomDatasetStackProps extends cdk.StackProps {
   resourcePrefix: string;
-  config: CustomDatasetConfig;
+  datasetConfig: CustomDatasetConfig;
 }
 
 export class CustomDatasetStack extends BaseStack {
@@ -25,7 +25,7 @@ export class CustomDatasetStack extends BaseStack {
   stageATransform: string;
   constructor(scope: Construct, id: string, props: CustomDatasetStackProps) {
     super(scope, id, props);
-    this.datasetConfig = props.config;
+    this.datasetConfig = props.datasetConfig;
     this.team = this.datasetConfig.team;
     this.pipeline = this.datasetConfig.pipeline;
     this.dataset = this.datasetConfig.dataset;

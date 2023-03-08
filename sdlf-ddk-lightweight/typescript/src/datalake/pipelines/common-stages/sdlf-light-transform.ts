@@ -49,7 +49,7 @@ export interface SDLFLightTransformProps extends StateMachineStageProps {
   readonly prefix: string;
   readonly environmentId: string;
   readonly config: SDLFLightTransformConfig;
-  readonly props: object;
+  readonly props: any;
 }
 
 export class SDLFLightTransform extends StateMachineStage {
@@ -80,7 +80,7 @@ export class SDLFLightTransform extends StateMachineStage {
     if (this.config.registerProvider) {
       new cdk.CustomResource(
         this,
-        `{this.props['id']}-{this.props['type']}-custom-resource`,
+        `${id}-custom-resource`,
         {
           serviceToken: this.config.registerProvider.serviceToken,
           properties: serviceSetupProperties
@@ -204,9 +204,9 @@ export class SDLFLightTransform extends StateMachineStage {
 
     new iam.ManagedPolicy(
       this,
-      `${this.prefix}-lambda-policy-${this.team}-${this.pipeline}-b`,
+      `${this.prefix}-lambda-policy-${this.team}-${this.pipeline}-a`,
       {
-        managedPolicyName: `${this.prefix}-lambda-policy-${this.team}-${this.pipeline}-b`,
+        managedPolicyName: `${this.prefix}-lambda-policy-${this.team}-${this.pipeline}-a`,
         roles: [role],
         document: new iam.PolicyDocument({
           statements: [
@@ -420,7 +420,7 @@ export class SDLFLightTransform extends StateMachineStage {
           effect: iam.Effect.ALLOW,
           actions: ['lambda:InvokeFunction'],
           resources: [
-            `arn:aws:lambda:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNTID}:function:${this.prefix}-${this.team}-${this.pipeline}-*`
+            `arn:aws:lambda:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:function:${this.prefix}-${this.team}-${this.pipeline}-*`
           ]
         })
       ]

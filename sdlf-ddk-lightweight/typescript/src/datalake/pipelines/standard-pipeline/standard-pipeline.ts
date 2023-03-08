@@ -270,7 +270,7 @@ export class StandardPipeline extends BaseStack {
       {
         environmentId: this.environmentId,
         resourcePrefix: this.resourcePrefix,
-        config: {
+        datasetConfig: {
           team: this.team,
           dataset: dataset,
           pipeline: PIPELINE_TYPE,
@@ -290,14 +290,15 @@ export class StandardPipeline extends BaseStack {
     );
 
     // Add S3 object created event pattern
-    const baseEventPattern = this.s3EventCaptureStage.eventPattern;
+    const baseEventPattern = JSON.parse(JSON.stringify(this.s3EventCaptureStage.eventPattern));
     if (baseEventPattern && baseEventPattern.detail) {
       baseEventPattern.detail['object'] = {
-        key: [{ prefix: `${this.team}/{dataset}/` }]
+        key: [{ prefix: `${this.team}/${dataset}/` }]
       };
     }
 
     this.datalakePipeline.addRule({
+      id: `standard-dataset-${dataset}-rule`,
       eventPattern: baseEventPattern,
       eventTargets: this.datalakeLightTransform.targets
     });

@@ -33,7 +33,7 @@ export class FoundationsStack extends BaseStack {
   readonly datasets: dynamo.Table;
   readonly pipelines: dynamo.Table;
   readonly peh: dynamo.Table;
-  readonly registerProvider: cr.Provider;
+  registerProvider: cr.Provider;
   readonly lakeformationBucketRegistrationRole: iam.Role;
   readonly rawBucket: s3.Bucket;
   readonly rawBucketKey: kms.Key;
@@ -147,7 +147,7 @@ export class FoundationsStack extends BaseStack {
     );
     this.datasets.grantReadWriteData(registerFunction);
     this.pipelines.grantReadWriteData(registerFunction);
-    const registerProvider = new cr.Provider(this, 'register-provider', {
+    this.registerProvider = new cr.Provider(this, 'register-provider', {
       onEventHandler: registerFunction
     });
   }
@@ -165,7 +165,7 @@ export class FoundationsStack extends BaseStack {
     );
     new ssm.StringParameter(
       this,
-      `${this.resourcePrefix}-$${name}-bucket-key-arn-ssm`,
+      `${this.resourcePrefix}-${name}-bucket-key-arn-ssm`,
       {
         parameterName: `/SDLF/KMS/${name}BucketKeyArn`,
         stringValue: bucketKey.keyArn
@@ -176,7 +176,7 @@ export class FoundationsStack extends BaseStack {
       this,
       `${this.resourcePrefix}-${name}-bucket`,
       S3Defaults.bucketProps({
-        bucketName: `${this.resourcePrefix}-${this.environmentId}-${cdk.Aws.REGION}-${cdk.Aws.ACCOUNT_ID}-$${name}`,
+        bucketName: `${this.resourcePrefix}-${this.environmentId}-${cdk.Aws.REGION}-${cdk.Aws.ACCOUNT_ID}-${name}`,
         encryption: s3.BucketEncryption.KMS,
         encryptionKey: bucketKey,
         accessControl: s3.BucketAccessControl.BUCKET_OWNER_FULL_CONTROL,
@@ -395,7 +395,7 @@ export class FoundationsStack extends BaseStack {
             actions: ['dynamodb:GetItem'],
             resources: [
               `arn:aws:dynamodb:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:table/`,
-              `${this.resourcePrefix}-${this.environmentId}-*`,
+              `arn:aws:dynamodb:${this.resourcePrefix}-${this.environmentId}-*`,
               `arn:aws:dynamodb:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:table/octagon-*`
             ]
           })

@@ -104,7 +104,7 @@ export class SDLFHeavyTransform extends StateMachineStage {
       this,
       `${this.prefix}-lambda-role-${this.team}-${this.pipeline}-b`,
       {
-        roleName: `{this.prefix}-lambda-role-{this.team}-{this.pipeline}-b`,
+        roleName: `${this.prefix}-lambda-role-${this.team}-${this.pipeline}-b`,
         assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
         managedPolicies: [
           iam.ManagedPolicy.fromAwsManagedPolicyName(

@@ -33,7 +33,7 @@ export interface StandardDatasetConfig {
 export interface StandardDatasetStackProps extends BaseStackProps {
   environmentId: string;
   resourcePrefix: string;
-  config: StandardDatasetConfig;
+  datasetConfig: StandardDatasetConfig;
 }
 
 export class StandardDatasetStack extends BaseStack {
@@ -52,7 +52,7 @@ export class StandardDatasetStack extends BaseStack {
 
   constructor(scope: Construct, id: string, props: StandardDatasetStackProps) {
     super(scope, id, props);
-    this.datasetConfig = props.config;
+    this.datasetConfig = props.datasetConfig;
     this.resourcePrefix = props.resourcePrefix;
     this.environmentId = props.environmentId;
     this.team = this.datasetConfig.team;
@@ -74,6 +74,8 @@ export class StandardDatasetStack extends BaseStack {
       this.stageBTransform
     );
     this.database = this.createGlueDatabase(this.team, this.dataset);
+    console.log("debug db")
+    console.log(this.database)
     this.createRoutingQueue();
 
     // Add stage b scheduled rule every 5 minutes

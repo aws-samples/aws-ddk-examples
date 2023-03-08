@@ -1,8 +1,8 @@
 {
-  "name": "typescript",
+  "name": "sdlf",
   "version": "0.1.0",
   "bin": {
-    "typescript": "bin/typescript.js"
+    "sdlf": "bin/sdlf.js"
   },
   "scripts": {
     "build": "tsc",
@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "aws-cdk-lib": "2.64.0",
-    "aws-ddk-core": "file:../../../ddk-ts/dist/js/aws-ddk-core@0.0.0.jsii.tgz",
+    "aws-ddk-core": "file:aws-ddk-core@0.0.0.jsii.tgz",
     "constructs": "^10.0.0",
     "lint": "^0.8.19"
   }

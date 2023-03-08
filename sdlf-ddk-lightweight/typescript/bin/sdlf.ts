@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
-import * as codecommit from 'aws-cdk-lib/aws-codecommit';
-import { BaseStack, CICDPipelineStack, Configurator, getConfig} from "aws-ddk-core";
+import { BaseStack, BaseStackProps, CICDPipelineStack, Configurator, getConfig} from "aws-ddk-core";
 import { Construct } from 'constructs';
 
 import { SDLFBaseStack } from "../src/datalake/pipelines";
@@ -36,21 +35,19 @@ class DataLakeFrameworkCICD extends cdk.Stage {
 
 export class DataLakeFramework extends BaseStack {  // For NO CICD deployments
 
-  constructor(scope: Construct, id: string, environmentId: string, pipelineParams: any) {
-    super(scope, id, {});
-    
+  constructor(scope: Construct, environmentId: string, props: BaseStackProps, pipelineParams?: any) {
     const resourcePrefix = pipelineParams["resource_prefix"] ?? "ddk";
+    const id = `${resourcePrefix}-data-lake-pipeline`;
+    super(scope, id, props);
     new SDLFBaseStack(
       this,
-      `${resourcePrefix}-data-lake-pipeline`,
+      id,
       {
         environmentId: environmentId,
         resourcePrefix: resourcePrefix,
         params: pipelineParams["data_pipeline_parameters"] ?? {}
       }
     )
-
-
   }
 }
 
@@ -86,10 +83,10 @@ if (cicdEnabled) {
     pipeline.synth()
 }
 else {
-  new DataLakeFrameworkCICD(
+  new DataLakeFramework(
     satelliteApp,
-    devConfig.config,
     "dev",
     {},
+    getConfig({}).environments.dev,
   )
 }
