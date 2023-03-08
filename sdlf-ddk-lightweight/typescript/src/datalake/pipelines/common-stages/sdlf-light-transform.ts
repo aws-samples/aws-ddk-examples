@@ -349,7 +349,7 @@ export class SDLFLightTransform extends StateMachineStage {
         ),
         handler: 'handler.lambda_handler',
         environment: {
-          stagebucket: `${this.prefix}-${this.environmentId}-${cdk.Aws.REGION}-${cdk.Aws.ACCOUNT_ID}-stage`,
+          stage_bucket: `${this.prefix}-${this.environmentId}-${cdk.Aws.REGION}-${cdk.Aws.ACCOUNT_ID}-stage`,
           TEAM: this.team,
           PIPELINE: this.pipeline,
           STAGE: 'StageA'

@@ -167,7 +167,9 @@ export class FoundationsStack extends BaseStack {
       this,
       `${this.resourcePrefix}-${name}-bucket-key-arn-ssm`,
       {
-        parameterName: `/SDLF/KMS/${name}BucketKeyArn`,
+        parameterName: `/SDLF/KMS/${name.charAt(0).toUpperCase()}${name.slice(
+          1
+        )}BucketKeyArn`,
         stringValue: bucketKey.keyArn
       }
     );
@@ -190,7 +192,9 @@ export class FoundationsStack extends BaseStack {
       this,
       `${this.resourcePrefix}-${name}-bucket-name-ssm`,
       {
-        parameterName: `/SDLF/S3/${name}Bucket`,
+        parameterName: `/SDLF/S3/${name.charAt(0).toUpperCase()}${name.slice(
+          1
+        )}Bucket`,
         stringValue: `${this.resourcePrefix}-${this.environmentId}-${cdk.Aws.REGION}-${cdk.Aws.ACCOUNT_ID}-${name}`
       }
     );

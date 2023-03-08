@@ -144,18 +144,18 @@ export class StandardDatasetStack extends BaseStack {
       name: `${team}-${datasetName}`,
       type: 'octagon_dataset',
       pipeline: pipeline,
-      maxitemsprocess: {
-        stageb: 100,
-        stagec: 100
+      max_items_process: {
+        stage_b: 100,
+        stage_c: 100
       },
-      minitemsprocess: {
-        stageb: 1,
-        stagec: 1
+      min_items_process: {
+        stage_b: 1,
+        stage_c: 1
       },
       version: 1,
       transforms: {
-        stageATransform: this.stageATransform,
-        stageBTransform: this.stageBTransform
+        stage_a_transform: this.stageATransform,
+        stage_b_transform: this.stageBTransform
       }
     };
 

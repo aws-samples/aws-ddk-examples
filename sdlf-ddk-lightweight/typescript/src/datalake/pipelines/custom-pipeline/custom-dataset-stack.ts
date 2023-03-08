@@ -55,7 +55,7 @@ export class CustomDatasetStack extends BaseStack {
       pipeline: pipeline,
       version: 1,
       transforms: {
-        stageatransform: this.stageATransform
+        stage_a_transform: this.stageATransform
       }
     };
 
