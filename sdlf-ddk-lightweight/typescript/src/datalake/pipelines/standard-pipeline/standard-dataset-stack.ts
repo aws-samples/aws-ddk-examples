@@ -89,12 +89,12 @@ export class StandardDatasetStack extends BaseStack {
         event: events.RuleTargetInput.fromObject({
           team: this.team,
           pipeline: this.pipeline,
-          pipelinestage: 'StageB',
+          pipeline_stage: 'StageB',
           dataset: this.dataset,
           org: this.org,
           app: this.app,
           env: this.environmentId,
-          databasename: this.database.ref
+          database_name: this.database.ref
         })
       })
     );
