@@ -64,7 +64,7 @@ export class StandardDatasetStack extends BaseStack {
     this.stageATransform = this.datasetConfig.stageATransform;
     this.stageBTransform = this.datasetConfig.stageBTransform;
 
-    const gluePath = `datalake/src/glue/pyshell_scripts/sdlf_heavy_transform/${this.team}/${this.dataset}/main.py`;
+    const gluePath = `data_lake/src/glue/pyshell_scripts/sdlf_heavy_transform/${this.team}/${this.dataset}/main.py`;
     this.createStageBGlueJob(this.team, this.dataset, gluePath);
     this.registerOctagonConfigs(
       this.team,
@@ -116,7 +116,7 @@ export class StandardDatasetStack extends BaseStack {
         },
         command: {
           name: 'glueetl',
-          scriptLocation: `s3://${this.datasetConfig.artifactsBucket.bucketName}/{codePath}`
+          scriptLocation: `s3://${this.datasetConfig.artifactsBucket.bucketName}/${codePath}`
         },
         defaultArguments: {
           '--job-bookmark-option': 'job-bookmark-enable',
