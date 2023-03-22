@@ -23,6 +23,9 @@
   },
   "dependencies": {
     "aws-cdk-lib": "2.64.0",
+    "@aws-cdk/aws-glue-alpha": "^2.64.0-alpha.0",
+    "@aws-cdk/aws-kinesisfirehose-alpha": "^2.64.0-alpha.0",
+    "@aws-cdk/aws-kinesisfirehose-destinations-alpha": "^2.64.0-alpha.0",
     "aws-ddk-core": "file:aws-ddk-core@0.0.0.jsii.tgz",
     "constructs": "^10.0.0",
     "lint": "^0.8.19"
