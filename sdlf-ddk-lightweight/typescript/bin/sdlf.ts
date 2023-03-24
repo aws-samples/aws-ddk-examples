@@ -53,6 +53,7 @@ export class DataLakeFramework extends BaseStack {  // For NO CICD deployments
 
 const satelliteApp = new cdk.App()
 const cicdConfig = new Configurator(satelliteApp, "./ddk.json", "cicd")
+const devConfig = new Configurator(satelliteApp, "./ddk.json", "dev")
 const pipelineName = "sdlf-ddk-pipeline"
 const cicdRepositoryName = cicdConfig.getConfigAttribute("repository") ?? "sdlf-ddk-example";
 const cicdEnabled = cicdConfig.getConfigAttribute("cicd_enabled") ?? false;
@@ -69,6 +70,7 @@ if (cicdEnabled) {
     pipeline.addSourceAction({repositoryName: cicdRepositoryName})
     pipeline.addSynthAction()
     pipeline.buildPipeline({publishAssetsInParallel: true})
+    pipeline.addSecurityLintStage({})
     pipeline.addStage({
       stageId: "dev",
       stage: new DataLakeFrameworkCICD(
