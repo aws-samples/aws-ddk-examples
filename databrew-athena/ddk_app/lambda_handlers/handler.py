@@ -47,7 +47,9 @@ def describe_recipe(recipe_name: str) -> str:
     return version
 
 
-def on_create(event: Dict[str, Any], recipe_name: str, props: Dict[str, Any]) -> Dict[str, Any]:
+def on_create(
+    event: Dict[str, Any], recipe_name: str, props: Dict[str, Any]
+) -> Dict[str, Any]:
     publish_recipe(recipe_name=recipe_name)
     recipe_version = describe_recipe(recipe_name=recipe_name)
     _logger.info(f"Create resource {recipe_name} with props {props}")
@@ -57,7 +59,9 @@ def on_create(event: Dict[str, Any], recipe_name: str, props: Dict[str, Any]) ->
     }
 
 
-def on_update(event: Dict[str, Any], recipe_name: str, props: Dict[str, Any]) -> Dict[str, Any]:
+def on_update(
+    event: Dict[str, Any], recipe_name: str, props: Dict[str, Any]
+) -> Dict[str, Any]:
     publish_recipe(recipe_name=recipe_name)
     recipe_version = describe_recipe(recipe_name=recipe_name)
     _logger.info(f"Update resource {recipe_name} with props {props}")
@@ -67,7 +71,9 @@ def on_update(event: Dict[str, Any], recipe_name: str, props: Dict[str, Any]) ->
     }
 
 
-def on_delete(event: Dict[str, Any], recipe_name: str, props: Dict[str, Any]) -> Dict[str, Any]:
+def on_delete(
+    event: Dict[str, Any], recipe_name: str, props: Dict[str, Any]
+) -> Dict[str, Any]:
     recipe_version = describe_recipe(recipe_name=recipe_name)
     delete_recipe(recipe_name=recipe_name, recipe_version=recipe_version)
     _logger.info(f"Delete resource {recipe_name} with props {props}")
@@ -75,7 +81,6 @@ def on_delete(event: Dict[str, Any], recipe_name: str, props: Dict[str, Any]) ->
 
 
 def handler(event: Dict[str, Any], context: Any) -> Any:
-
     _logger.info(f"Received event: {event}")
 
     request_type = event["RequestType"]
