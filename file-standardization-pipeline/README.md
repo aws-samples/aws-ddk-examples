@@ -58,18 +58,6 @@ $ cdk --version
 
 At this time, you should have downloaded the code for this pattern and should be in the top-level directory of this pattern.
 
-Install AWS DDK CLI, a command line interface to manage your DDK apps
-
-```
-$ pip install aws-ddk
-```
-
-To verify the installation, run:
-
-```
-$ ddk --help
-```
-
 Create and activate a virtualenv
 
 ```
@@ -83,14 +71,14 @@ This is when the AWS DDK Core library is installed
 $ pip install -r requirements.txt --no-cache-dir
 ```
 
-## DDK Bootstrapping
+## CDK Bootstrapping
 
 In order to deploy DDK apps, you need to bootstrap your environment with the correct environment name.
 
-Run the following command to bootstrap the `dev` environment for your respective AWS Account and Region:
+Run the following command to bootstrap the environment for your respective AWS Account and Region:
 
 ```
-$ ddk bootstrap --profile [AWS_PROFILE] --region [AWS_REGION]
+$ cdk bootstrap --profile [AWS_PROFILE] or cdk bootstrap aws://ACCOUNT-NUMBER-1/REGION-1
 ```
 
 ## Edit DDK.json
@@ -106,7 +94,7 @@ Be sure to save your changes to the file before proceeding!
 To deploy the pipeline, run the following command:
 
 ```
-$ ddk deploy --profile [AWS_PROFILE]
+$ cdk deploy --profile [AWS_PROFILE]
 ```
 
 This command should launch a CloudFormation template in the AWS account and region specified in DDK.json, and should take a few minutes to create.
