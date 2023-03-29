@@ -50,19 +50,6 @@ $ cdk --version
 
 Download this code base, unzip the file and change into this directory. Then follow a set of commands to set up DDK:
 
-
-Install AWS DDK CLI, a command line interface to manage your DDK apps
-
-```
-$ pip install aws-ddk
-```
-
-To verify the installation, run:
-
-```
-$ ddk --help
-```
-
 Create and activate a virtualenv
 
 ```
@@ -76,14 +63,14 @@ $ pip install -r requirements.txt --no-cache-dir
 ```
 #
 
-### DDK Bootstrapping
+### CDK Bootstrapping
 
 In order to deploy DDK apps, you need to bootstrap your environment with the correct environment name.
 
-Run the following command to bootstrap the `dev` environment for your respective AWS Account and Region:
+Run the following command to bootstrap the environment for your respective AWS Account and Region:
 
 ```
-$ ddk bootstrap --profile [AWS_PROFILE] --region [AWS_REGION]
+$ cdk bootstrap --profile [AWS_PROFILE] or cdk bootstrap aws://ACCOUNT-NUMBER-1/REGION-1
 ```
 
 ### Editing ddk.json 
@@ -95,7 +82,7 @@ Open the `ddk.json` file in the codebase and edit the `account` and `region` par
 Verify the `ddk.json` is updated with your configuration and run the deploy command to deploy:
 
 ```
-$ ddk deploy --profile [AWS_PROFILE]
+$ cdk deploy --profile [AWS_PROFILE]
 ```
 
 CloudFormation will begin to deploy a stack to create the resources required by the Data Ingestion Pipeline in your respective AWS Account and Region specified.
