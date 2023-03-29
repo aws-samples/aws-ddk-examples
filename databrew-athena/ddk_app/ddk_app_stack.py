@@ -34,7 +34,7 @@ class DdkApplicationStack(BaseStack):
             environment_id=environment_id, bucket_id="databrew-pipeline-input-bucket"
         )
 
-        self._upload_data_to_buckets(input_bucket)
+        marketing_bucket_deployment = self._upload_data_to_buckets(input_bucket)
 
         output_bucket = self._create_s3_bucket(
             environment_id=environment_id, bucket_id="databrew-pipeline-output-bucket"
@@ -43,6 +43,10 @@ class DdkApplicationStack(BaseStack):
         marketing_job = self._create_databrew_environment(
             input_bucket, output_bucket, environment_id
         )
+
+        marketing_job.node.add_dependency(marketing_bucket_deployment)
+        marketing_job.node.add_dependency(output_bucket)
+
 
         marketing_database = self._create_database(database_name="marketing_data")
 
@@ -123,7 +127,7 @@ class DdkApplicationStack(BaseStack):
 
         return s3_bucket
 
-    def _upload_data_to_buckets(self, input_bucket: Bucket) -> None:
+    def _upload_data_to_buckets(self, input_bucket: Bucket) -> BucketDeployment:
         marketing_file_deployment: BucketDeployment = BucketDeployment(
             self,
             "marketing-data-deployment",
@@ -131,6 +135,7 @@ class DdkApplicationStack(BaseStack):
             destination_bucket=input_bucket,
             destination_key_prefix="marketing",
         )
+        return marketing_file_deployment
 
     def _create_databrew_environment(
         self, input_bucket: Bucket, output_bucket: Bucket, environment_id: str

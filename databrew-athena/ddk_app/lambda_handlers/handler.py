@@ -27,10 +27,10 @@ def publish_recipe(recipe_name: str) -> None:
         raise e
 
 
-def delete_recipe(recipe_name: str, recipe_version: str) -> None:
+def delete_recipe(recipe_name: str) -> None:
     gdb_client = boto3.client("databrew")
     try:
-        gdb_client.delete_recipe_version(Name=recipe_name, RecipeVersion=recipe_version)
+        gdb_client.delete_recipe_version(Name=recipe_name, RecipeVersion='LATEST_WORKING')
     except Exception as e:
         raise e
 
@@ -74,8 +74,7 @@ def on_update(
 def on_delete(
     event: Dict[str, Any], recipe_name: str, props: Dict[str, Any]
 ) -> Dict[str, Any]:
-    recipe_version = describe_recipe(recipe_name=recipe_name)
-    delete_recipe(recipe_name=recipe_name, recipe_version=recipe_version)
+    delete_recipe(recipe_name=recipe_name)
     _logger.info(f"Delete resource {recipe_name} with props {props}")
     return {"PhysicalResourceId": recipe_name}
 
