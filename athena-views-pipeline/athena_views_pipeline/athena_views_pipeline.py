@@ -1,18 +1,17 @@
 from typing import Any
 
+import aws_cdk as cdk
+from aws_cdk.aws_dynamodb import Attribute, AttributeType, Table
 from aws_cdk.aws_events import EventPattern, Rule, RuleTargetInput, Schedule
 from aws_cdk.aws_events_targets import SfnStateMachine
 from aws_cdk.aws_iam import Effect, PolicyStatement, ServicePrincipal
 from aws_cdk.aws_lambda import Code as lambda_code
-from aws_cdk.aws_s3 import Bucket, BucketAccessControl
-from aws_cdk.aws_dynamodb import Table, AttributeType, Attribute
+from aws_cdk.aws_lambda import Runtime
+from aws_cdk.aws_s3 import Bucket, BucketAccessControl, Location
 from aws_cdk.aws_stepfunctions import JsonPath
-from aws_ddk_core.base import BaseStack
-from aws_ddk_core.pipelines import DataPipeline
-from aws_ddk_core.resources import S3Factory
-from aws_ddk_core.stages import AthenaSQLStage, SqsToLambdaStage
+from aws_ddk_core import AthenaSQLStage, BaseStack, DataPipeline, SqsToLambdaStage
 from constructs import Construct
-import aws_cdk as cdk
+
 from athena_views_pipeline.utils import utils
 
 
@@ -20,9 +19,9 @@ class AthenaViewsPipeline(BaseStack):
     def __init__(
         self, scope: Construct, id: str, environment_id: str, **kwargs: Any
     ) -> None:
-        super().__init__(scope, id, environment_id, **kwargs)
+        super().__init__(scope, id, environment_id=environment_id, **kwargs)
 
-        bucket = self._create_s3_bucket(environment_id=environment_id)
+        bucket = self._create_s3_bucket()
         events_list = utils.get_events_json()
 
         self._athena_stage = AthenaSQLStage(
@@ -34,9 +33,10 @@ class AthenaViewsPipeline(BaseStack):
                 JsonPath.string_at("$.view"),
                 JsonPath.string_at("$.query"),
             ),
-            environment_id=environment_id,
-            output_bucket_name=bucket.bucket_name,
-            output_object_key="query_output",
+            output_location=Location(
+                bucket_name=bucket.bucket_name,
+                object_key="query_output",
+            ),
             additional_role_policy_statements=[self._get_glue_db_iam_policy()],
         )
 
@@ -45,9 +45,13 @@ class AthenaViewsPipeline(BaseStack):
         self._sqs_lambda_stage = SqsToLambdaStage(
             self,
             id="sqs-lambda-stage",
-            environment_id=environment_id,
-            code=lambda_code.from_asset("./athena_views_pipeline/lambda_handlers"),
-            handler="handler.lambda_handler",
+            lambda_function_props={
+                "code": lambda_code.from_asset(
+                    "./athena_views_pipeline/lambda_handlers"
+                ),
+                "handler": "handler.lambda_handler",
+                "runtime": Runtime.PYTHON_3_9,
+            },
         )
 
         self._ddb_table = Table(
@@ -55,20 +59,20 @@ class AthenaViewsPipeline(BaseStack):
             id=f"ddb-failure-capture-table",
             partition_key=Attribute(name="view_name", type=AttributeType.STRING),
             sort_key=Attribute(name="db", type=AttributeType.STRING),
-            removal_policy=cdk.RemovalPolicy.DESTROY
+            removal_policy=cdk.RemovalPolicy.DESTROY,
         )
 
         self._ddb_table.grant_read_write_data(self._sqs_lambda_stage.function)
         self._sqs_lambda_stage.function.add_environment(
-            key="DDB_TABLE",
-            value=self._ddb_table.table_name
+            key="DDB_TABLE", value=self._ddb_table.table_name
         )
 
         self._athena_views_pipeline = (
             DataPipeline(self, id="athena-views-execution-pipeline")
-            .add_stage(self._athena_stage)
+            .add_stage(stage=self._athena_stage)
             .add_stage(
-                self._sqs_lambda_stage, override_rule=self._get_failure_override_rule()
+                stage=self._sqs_lambda_stage,
+                override_rule=self._get_failure_override_rule(),
             )
         )
 
@@ -89,16 +93,17 @@ class AthenaViewsPipeline(BaseStack):
                     ],
                 },
             ),
-            targets=self._sqs_lambda_stage.get_targets(),
+            targets=self._sqs_lambda_stage.targets,
         )
 
-    def _create_s3_bucket(self, environment_id: str) -> Bucket:
-        bucket = S3Factory.bucket(
+    def _create_s3_bucket(self) -> Bucket:
+        bucket = Bucket(
             self,
             id="bucket",
-            environment_id=environment_id,
             access_control=BucketAccessControl.BUCKET_OWNER_FULL_CONTROL,
             event_bridge_enabled=True,
+            versioned=True,
+            removal_policy=cdk.RemovalPolicy.DESTROY,
         )
         bucket.add_to_resource_policy(
             PolicyStatement(
@@ -133,7 +138,7 @@ class AthenaViewsPipeline(BaseStack):
                 "glue:CreateTable",
                 "glue:getDatabase",
                 "glue:getTable",
-                "glue:updateTable"
+                "glue:updateTable",
             ],
             resources=[
                 f"arn:aws:glue:{self.region}:{self.account}:catalog",
