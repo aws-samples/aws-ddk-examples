@@ -1,5 +1,6 @@
 from typing import Any
 
+import aws_cdk as cdk
 import aws_cdk.aws_s3 as s3
 from aws_cdk.aws_lambda import Code, LayerVersion, Runtime
 from aws_ddk_core import BaseStack, DataPipeline, FirehoseToS3Stage, SqsToLambdaStage
@@ -17,6 +18,8 @@ class DdkApplicationStack(BaseStack):
             self,
             "ddk-bucket",
             event_bridge_enabled=True,
+            versioned=True,
+            removal_policy=cdk.RemovalPolicy.DESTROY
         )
 
         firehose_s3_stage = FirehoseToS3Stage(
