@@ -57,35 +57,39 @@ export class SDLFBaseStack extends BaseStack {
       // PIPELINE CREATION
       const pipelineName = `${team}-${pipelineType}`;
       var pipeline: StandardPipeline | CustomPipeline;
-      if (pipelineType == 'standard') {
-        pipeline = new StandardPipeline(this, `${team}-${pipelineType}`, {
-          environmentId: props.environmentId,
-          resourcePrefix: this.resourcePrefix,
-          team: team,
-          foundationsStage: this.foundationsStage,
-          wranglerLayer: this.wranglerLayer,
-          app: this.app,
-          org: this.org,
-          runtime: lambda.Runtime.PYTHON_3_9
-        });
-      } else if (pipelineType == 'custom') {
-        pipeline = new CustomPipeline(this, `${team}-${pipelineType}`, {
-          environmentId: props.environmentId,
-          resourcePrefix: this.resourcePrefix,
-          team: team,
-          foundationsStage: this.foundationsStage,
-          wranglerLayer: this.wranglerLayer,
-          app: this.app,
-          org: this.org,
-          runtime: lambda.Runtime.PYTHON_3_9
-        });
+      if (!(pipelineName in pipelines)) {
+        if (pipelineType == 'standard') {
+          pipeline = new StandardPipeline(this, `${team}-${pipelineType}`, {
+            environmentId: props.environmentId,
+            resourcePrefix: this.resourcePrefix,
+            team: team,
+            foundationsStage: this.foundationsStage,
+            wranglerLayer: this.wranglerLayer,
+            app: this.app,
+            org: this.org,
+            runtime: lambda.Runtime.PYTHON_3_9
+          });
+        } else if (pipelineType == 'custom') {
+          pipeline = new CustomPipeline(this, `${team}-${pipelineType}`, {
+            environmentId: props.environmentId,
+            resourcePrefix: this.resourcePrefix,
+            team: team,
+            foundationsStage: this.foundationsStage,
+            wranglerLayer: this.wranglerLayer,
+            app: this.app,
+            org: this.org,
+            runtime: lambda.Runtime.PYTHON_3_9
+          });
+        } else {
+          throw new Error(
+            `Could not find a valid implementation for pipeline type: ${pipelineType}`
+          );
+        }
+        pipelines[pipelineName] = pipeline;
       } else {
-        throw new Error(
-          `Could not find a valid implementation for pipeline type: ${pipelineType}`
-        );
+        pipeline = pipelines[pipelineName];
       }
-      pipelines[pipelineName] = pipeline;
-
+                
       // Register dataset to pipeline with concrete implementations
       const datasetName = `${team}-${dataset}`;
       if (!datasetNames.includes(datasetName)) {
