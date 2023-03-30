@@ -54,18 +54,6 @@ At this time, the file in unzipped and you are in the directory. You will follow
 
 Continue to the steps below to set up the deployment:
 
-Install AWS DDK CLI, a command line interface to manage your DDK apps
-
-```
-$ pip install aws-ddk
-```
-
-To verify the installation, run:
-
-```
-$ ddk --help
-```
-
 Create and activate a virtualenv
 
 ```
@@ -101,31 +89,24 @@ Based on your use case, refer to the following instructions to configure and dep
 
 ![Alt](docs/images/SameAccountSameRegion.jpeg)
 
-### DDK Bootstrapping
+### CDK Bootstrapping
 
 In order to deploy DDK apps, you need to bootstrap your environment with the correct environment name.
 
-There are three environments to bootstrap for each of their respective regions and accounts (`cicd`, `stor`, `comp`). To get an understanding of the parameter options for the bootstrap command, first run:
-```
-$ ddk bootstrap --help
-```
+There are three environments to bootstrap for each of their respective regions and accounts (`cicd`, `stor`, `comp`). 
 
-The `cicd` environemnt is where the source repository and CICD Pipeline will exist for your application. Run the following command to bootstrap:
+
+The `cicd` environemnt is where the source repository and CICD Pipeline will exist for your application. The `stor` environment is where the storage S3 Bucket and related resources (i.e. KMS Key, etc.). The `comp` environemnt is where the compute resources (i.e. SQS, Lambda, etc.) will exist for your application
 <br />
 ```
-$ ddk bootstrap --profile [AWS_PROFILE] --region [AWS_REGION] -e cicd
+$ cdk bootstrap aws://ACCOUNT-NUMBER-1/REGION-1 aws://ACCOUNT-NUMBER-2/REGION-2 aws://ACCOUNT-NUMBER-3/REGION-3
 ```
+or 
 
-The `stor` environment is where the storage S3 Bucket and related resources (i.e. KMS Key, etc.) will exist for your application. Run the following command to bootstrap:
-<br />
 ```
-$ ddk bootstrap --profile [AWS_PROFILE] --region [AWS_REGION] -e stor
-```
-
-The `comp` environemnt is where the compute resources (i.e. SQS, Lambda, etc.) will exist for your application. Run the following command to bootstrap:
-<br />
-```
-$ ddk bootstrap --profile [AWS_PROFILE] --region [AWS_REGION] -e comp
+$ cdk bootstrap --profile [CICD_PROFILE]
+$ cdk bootstrap --profile [STOR_PROFILE]
+$ cdk bootstrap --profile [COMP_PROFILE]
 ```
 
 ### Editing ddk.json 
@@ -150,7 +131,7 @@ Execute the create repository command to create a new codecommit repository in t
 _NOTE: Make Sure the REPO_NAME matches the repository name value in the app.py file or vice versa before executing_
 
 ```
-$ ddk create-repository REPO_NAME --profile [AWS_PROFILE] --region [AWS_REGION]
+$ aws codecommit create-repository --repository-name REPO_NAME --profile [AWS_PROFILE] --region [AWS_REGION]
 ```
 
 Add and push the initial commit to the repository
@@ -166,7 +147,7 @@ $ git push --set-upstream origin main
 Verify the `ddk.json` is updated with your configuration and run the deploy command to deploy:
 
 ```
-$ ddk deploy --profile [AWS_PROFILE]
+$ cdk deploy --profile [AWS_PROFILE]
 ```
 
 #
@@ -175,33 +156,25 @@ $ ddk deploy --profile [AWS_PROFILE]
 
 ![Alt](docs/images/SameAccountCrossRegion.jpeg)
 
-### DDK Bootstrapping
+### CDK Bootstrapping
 
 In order to deploy DDK apps, you need to bootstrap your environment with the correct environment name.
 
-There are three environments to bootstrap for each of their respective regions and accounts (`cicd`, `stor`, `comp`). To get an understanding of the parameter options for the bootstrap command, first run:
-```
-$ ddk bootstrap --help
-```
+There are three environments to bootstrap for each of their respective regions and accounts (`cicd`, `stor`, `comp`). 
 
-The `cicd` environemnt is where the source repository and CICD Pipeline will exist for your application. Run the following command to bootstrap:
+
+The `cicd` environemnt is where the source repository and CICD Pipeline will exist for your application. The `stor` environment is where the storage S3 Bucket and related resources (i.e. KMS Key, etc.). The `comp` environemnt is where the compute resources (i.e. SQS, Lambda, etc.) will exist for your application
 <br />
 ```
-$ ddk bootstrap --profile [AWS_PROFILE] --region [AWS_REGION] -e cicd
+$ cdk bootstrap aws://ACCOUNT-NUMBER-1/REGION-1 aws://ACCOUNT-NUMBER-2/REGION-2 aws://ACCOUNT-NUMBER-3/REGION-3
 ```
+or 
 
-The `stor` environment is where the storage S3 Bucket and related resources (i.e. KMS Key, etc.) will exist for your application. Run the following command to bootstrap:
-<br />
 ```
-$ ddk bootstrap --profile [AWS_PROFILE] --region [AWS_REGION] -e stor
+$ cdk bootstrap --profile [CICD_PROFILE]
+$ cdk bootstrap --profile [STOR_PROFILE]
+$ cdk bootstrap --profile [COMP_PROFILE]
 ```
-
-The `comp` environment is where the compute resources (i.e. SQS, Lambda, etc.) will exist for your application. Run the following command to bootstrap:
-<br />
-```
-$ ddk bootstrap --profile [AWS_PROFILE] --region [AWS_REGION] -e comp
-```
-
 ### Editing ddk.json 
 
 Open the `ddk.json` file in the codebase and edit each of your `cicd`, `stor`, and `comp` environments with the correct `account` and `region`
@@ -224,7 +197,7 @@ Execute the create repository command to create a new codecommit repository in t
 _NOTE: Make Sure the REPO_NAME matches the repository name value in the app.py file or vice versa before executing_
 
 ```
-$ ddk create-repository REPO_NAME --profile [AWS_PROFILE] --region [AWS_REGION]
+$ aws codecommit create-repository --repository-name REPO_NAME --profile [AWS_PROFILE] --region [AWS_REGION]
 ```
 
 Add and push the initial commit to the repository
@@ -240,7 +213,7 @@ $ git push --set-upstream origin main
 Verify the `ddk.json` is updated with your configuration and run the deploy command to deploy:
 
 ```
-$ ddk deploy --profile [AWS_PROFILE]
+$ cdk deploy --profile [AWS_PROFILE]
 ```
 
 The AWS_PROFILE is the profile for the `cicd` environment to deploy in the same account and region as the source CodeCommit Repository
@@ -252,34 +225,27 @@ The AWS_PROFILE is the profile for the `cicd` environment to deploy in the same 
 
 ![Alt](docs/images/CrossAccountSameRegion.jpeg)
 
-### DDK Bootstrapping
+### CDK Bootstrapping
 
 In order to deploy DDK apps, you need to bootstrap your environment with the correct environment name. Additionally, you will have to pass the other AWS Account IDs for the other environemnts to be trusted if you are deploying the pipeline following a cross account pattern.
 
-There are three environments to bootstrap for each of their respective regions and accounts (`cicd`, `stor`, `comp`). To get an understanding of the parameter options for the bootstrap command, first run:
-```
-$ ddk bootstrap --help
-```
+There are three environments to bootstrap for each of their respective regions and accounts (`cicd`, `stor`, `comp`). 
 
-The `cicd` environemnt is where the source repository and CICD Pipeline will exist for your application. Run the following command to bootstrap:
+
+The `cicd` environemnt is where the source repository and CICD Pipeline will exist for your application. The `stor` environment is where the storage S3 Bucket and related resources (i.e. KMS Key, etc.). The `comp` environemnt is where the compute resources (i.e. SQS, Lambda, etc.) will exist for your application
 <br />
 ```
-$ ddk bootstrap --profile [AWS_PROFILE] --region [AWS_REGION] -e cicd --trusted-accounts [OTHER_AWS_ACCOUNT]
+$ cdk bootstrap aws://ACCOUNT-NUMBER-1/REGION-1 aws://ACCOUNT-NUMBER-2/REGION-2 aws://ACCOUNT-NUMBER-3/REGION-3
 ```
+or 
 
-The `stor` environment is where the storage S3 Bucket and related resources (i.e. KMS Key, etc.) will exist for your application. Run the following command to bootstrap:
-<br />
 ```
-$ ddk bootstrap --profile [AWS_PROFILE] --region [AWS_REGION] -e stor --trusted-accounts [OTHER_AWS_ACCOUNT]
-```
+$ cdk bootstrap --profile [CICD_PROFILE]
+$ cdk bootstrap --profile [STOR_PROFILE] --trust [CICD_ACCOUNT]
+$ cdk bootstrap --profile [COMP_PROFILE] --trust [CICD_ACCOUNT]
+``` 
 
-The `comp` environemnt is where the compute resources (i.e. SQS, Lambda, etc.) will exist for your application. Run the following command to bootstrap:
-<br />
-```
-$ ddk bootstrap --profile [AWS_PROFILE] --region [AWS_REGION] -e comp --trusted-accounts [OTHER_AWS_ACCOUNT]
-```
-
-_NOTE: The `--trusted-accounts` parameters is only required for Cross Account patterns and can be called multiple times for passing multiple account IDs_
+_NOTE: The `--trust` parameters is only required for Cross Account patterns by passing multiple account IDs_
 
 ### Editing ddk.json 
 
@@ -305,7 +271,7 @@ Execute the create repository command to create a new codecommit repository in t
 _NOTE: Make Sure the REPO_NAME matches the repository name value in the app.py file or vice versa before executing_
 
 ```
-$ ddk create-repository REPO_NAME --profile [AWS_PROFILE] --region [AWS_REGION]
+$ aws codecommit create-repository --repository-name REPO_NAME --profile [AWS_PROFILE] --region [AWS_REGION]
 ```
 
 Add and push the initial commit to the repository
@@ -321,7 +287,7 @@ $ git push --set-upstream origin main
 Verify the `ddk.json` is updated with your configuration and run the deploy command to deploy:
 
 ```
-$ ddk deploy --profile [AWS_PROFILE]
+$ cdk deploy --profile [AWS_PROFILE]
 ```
 
 The AWS_PROFILE is the profile for the `cicd` environment to deploy in the same account and region as the source CodeCommit Repository
@@ -331,35 +297,27 @@ The AWS_PROFILE is the profile for the `cicd` environment to deploy in the same 
 ## Cross Account Cross Region Pipeline
 
 ![Alt](docs/images/CrossAccountCrossRegion.jpeg)
-
-### DDK Bootstrapping
+### CDK Bootstrapping
 
 In order to deploy DDK apps, you need to bootstrap your environment with the correct environment name. Additionally, you will have to pass the other AWS Account IDs for the other environemnts to be trusted if you are deploying the pipeline following a cross account pattern.
 
-There are three environments to bootstrap for each of their respective regions and accounts (`cicd`, `stor`, `comp`). To get an understanding of the parameter options for the bootstrap command, first run:
-```
-$ ddk bootstrap --help
-```
+There are three environments to bootstrap for each of their respective regions and accounts (`cicd`, `stor`, `comp`). 
 
-The `cicd` environemnt is where the source repository and CICD Pipeline will exist for your application. Run the following command to bootstrap:
+
+The `cicd` environemnt is where the source repository and CICD Pipeline will exist for your application. The `stor` environment is where the storage S3 Bucket and related resources (i.e. KMS Key, etc.). The `comp` environemnt is where the compute resources (i.e. SQS, Lambda, etc.) will exist for your application
 <br />
 ```
-$ ddk bootstrap --profile [AWS_PROFILE] --region [AWS_REGION] -e cicd --trusted-accounts [OTHER_AWS_ACCOUNT]
+$ cdk bootstrap aws://ACCOUNT-NUMBER-1/REGION-1 aws://ACCOUNT-NUMBER-2/REGION-2 aws://ACCOUNT-NUMBER-3/REGION-3
 ```
+or 
 
-The `stor` environment is where the storage S3 Bucket and related resources (i.e. KMS Key, etc.) will exist for your application. Run the following command to bootstrap:
-<br />
 ```
-$ ddk bootstrap --profile [AWS_PROFILE] --region [AWS_REGION] -e stor --trusted-accounts [OTHER_AWS_ACCOUNT]
-```
+$ cdk bootstrap --profile [CICD_PROFILE]
+$ cdk bootstrap --profile [STOR_PROFILE] --trust [CICD_ACCOUNT]
+$ cdk bootstrap --profile [COMP_PROFILE] --trust [CICD_ACCOUNT]
+``` 
 
-The `comp` environemnt is where the compute resources (i.e. SQS, Lambda, etc.) will exist for your application. Run the following command to bootstrap:
-<br />
-```
-$ ddk bootstrap --profile [AWS_PROFILE] --region [AWS_REGION] -e comp --trusted-accounts [OTHER_AWS_ACCOUNT]
-```
-
-_NOTE: The `--trusted-accounts` parameters is only required for Cross Account patterns and can be called multiple times for passing multiple account IDs_
+_NOTE: The `--trust` parameters is only required for Cross Account patterns by passing multiple account IDs_
 
 ### Editing ddk.json 
 
@@ -385,7 +343,7 @@ Execute the create repository command to create a new codecommit repository in t
 _NOTE: Make Sure the REPO_NAME matches the repository name value in the app.py file or vice versa before executing_
 
 ```
-$ ddk create-repository REPO_NAME --profile [AWS_PROFILE] --region [AWS_REGION]
+$ aws codecommit create-repository --repository-name REPO_NAME --profile [AWS_PROFILE] --region [AWS_REGION]
 ```
 
 Add and push the initial commit to the repository
@@ -401,7 +359,7 @@ $ git push --set-upstream origin main
 Verify the `ddk.json` is updated with your configuration and run the deploy command to deploy:
 
 ```
-$ ddk deploy --profile [AWS_PROFILE]
+$ cdk deploy --profile [AWS_PROFILE]
 ```
 
 The AWS_PROFILE is the profile for the `cicd` environment to deploy in the same account and region as the source CodeCommit Repository
