@@ -24,7 +24,7 @@ from aws_ddk_core.stages import AthenaSQLStage, DataBrewTransformStage
 from constructs import Construct
 
 
-class DdkApplicationStack(BaseStack):
+class DataBrewAthenaStack(BaseStack):
     def __init__(
         self, scope: Construct, id: str, environment_id: str, **kwargs: Any
     ) -> None:

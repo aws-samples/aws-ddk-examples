@@ -2,9 +2,9 @@
 
 import aws_cdk as cdk
 
-from ddk_app.ddk_app_stack import DdkApplicationStack
+from ddk_app.databrew_athena_stack import DataBrewAthenaStack
 
 app = cdk.App()
-DdkApplicationStack(app, "DdkApplicationStack", "dev")
+DataBrewAthenaStack(app, "DataBrewAthenaStack", "dev")
 
 app.synth()
