@@ -1,0 +1,8 @@
+{
+    "cdk_version": "2.54.0",
+    "environments": {
+        "dev": {
+
+        }
+    }
+}
