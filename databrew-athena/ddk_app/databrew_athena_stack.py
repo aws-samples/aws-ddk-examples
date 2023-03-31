@@ -1,11 +1,11 @@
 from typing import Any
 
-from aws_cdk import CustomResource, CustomResourceProvider, Duration
+from aws_cdk import CustomResource, Duration
 from aws_cdk import aws_databrew as databrew
 from aws_cdk import aws_lambda as _lambda
 from aws_cdk import custom_resources as cr
 from aws_cdk.aws_databrew import CfnDataset, CfnRecipe
-from aws_cdk.aws_events import EventPattern, Rule, Schedule
+from aws_cdk.aws_events import Rule, Schedule
 from aws_cdk.aws_glue_alpha import Database
 from aws_cdk.aws_iam import (
     Effect,
