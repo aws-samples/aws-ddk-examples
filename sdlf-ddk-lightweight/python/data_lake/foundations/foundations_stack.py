@@ -25,11 +25,9 @@ import aws_cdk.aws_lakeformation as lf
 import aws_cdk.aws_lambda as lmbda
 import aws_cdk.aws_s3 as s3
 import aws_cdk.aws_ssm as ssm
-from aws_cdk.aws_s3_deployment import (BucketDeployment, ServerSideEncryption,
-                                       Source)
+from aws_cdk.aws_s3_deployment import BucketDeployment, ServerSideEncryption, Source
 from aws_cdk.custom_resources import Provider
-from aws_ddk_core.base import BaseStack
-from aws_ddk_core.resources import KMSFactory, LambdaFactory, S3Factory
+from aws_ddk_core import BaseStack
 from constructs import Construct
 
 
@@ -46,12 +44,13 @@ class FoundationsStack(BaseStack):
         **kwargs: Any,
     ) -> None:
         self._resource_prefix = resource_prefix
+        self._environment_id = environment_id
         super().__init__(
             scope,
             construct_id,
-            environment_id,
+            environment_id=environment_id,
             stack_name=f"{self._resource_prefix}-FoundationsStack-{environment_id}",
-            **kwargs
+            **kwargs,
         )
 
         self._app = app
@@ -60,46 +59,66 @@ class FoundationsStack(BaseStack):
         # creates DDB tables an registers them with SSM parameters
         self._object_metadata = self._create_octagon_ddb_table(
             name=f"octagon-ObjectMetadata-{self._environment_id}",
-            ddb_props={"partition_key": ddb.Attribute(name="id", type=ddb.AttributeType.STRING)},
+            ddb_props={
+                "partition_key": ddb.Attribute(name="id", type=ddb.AttributeType.STRING)
+            },
         )
 
         self._datasets = self._create_octagon_ddb_table(
             name=f"octagon-Datasets-{self._environment_id}",
-            ddb_props={"partition_key": ddb.Attribute(name="name", type=ddb.AttributeType.STRING)},
+            ddb_props={
+                "partition_key": ddb.Attribute(
+                    name="name", type=ddb.AttributeType.STRING
+                )
+            },
         )
 
         self._pipelines = self._create_octagon_ddb_table(
             name=f"octagon-Pipelines-{self._environment_id}",
-            ddb_props={"partition_key": ddb.Attribute(name="name", type=ddb.AttributeType.STRING)},
+            ddb_props={
+                "partition_key": ddb.Attribute(
+                    name="name", type=ddb.AttributeType.STRING
+                )
+            },
         )
         self._peh = self._create_octagon_ddb_table(
             name=f"octagon-PipelineExecutionHistory-{self._environment_id}",
-            ddb_props={"partition_key": ddb.Attribute(name="id", type=ddb.AttributeType.STRING)},
+            ddb_props={
+                "partition_key": ddb.Attribute(name="id", type=ddb.AttributeType.STRING)
+            },
         )
 
         # creates "register-provider" which inserts/updates dataset/pipelines into DDB tables.
         self._create_register(runtime)
 
         # creates encrypted buckets and registers them in lake formation
-        self._lakeformation_bucket_registration_role = self._create_lakeformation_bucket_registration_role()
+        self._lakeformation_bucket_registration_role = (
+            self._create_lakeformation_bucket_registration_role()
+        )
         self._raw_bucket, self._raw_bucket_key = self._create_bucket(name="raw")
         self._stage_bucket, self._stage_bucket_key = self._create_bucket(name="stage")
-        self._analytics_bucket, self._analytics_bucket_key = self._create_bucket(name="analytics")
-        self._artifacts_bucket, self._artifacts_bucket_key = self._create_bucket(name="artifacts")
-        self._athena_bucket, self._athena_bucket_key = self._create_bucket(name="athena")
+        self._analytics_bucket, self._analytics_bucket_key = self._create_bucket(
+            name="analytics"
+        )
+        self._artifacts_bucket, self._artifacts_bucket_key = self._create_bucket(
+            name="artifacts"
+        )
+        self._athena_bucket, self._athena_bucket_key = self._create_bucket(
+            name="athena"
+        )
 
         # pushes scripts from data_lake/src/glue/ to S3 "artifacts" bucket.
         self._glue_role = self._create_sdlf_glue_artifacts()
 
-    def _create_octagon_ddb_table(self, name: str, ddb_props: Dict[str, Any]) -> ddb.Table:
-
+    def _create_octagon_ddb_table(
+        self, name: str, ddb_props: Dict[str, Any]
+    ) -> ddb.Table:
         table_name = name.split("-")[1]
 
         # ddb kms key resource
-        table_key: kms.IKey = KMSFactory.key(
+        table_key: kms.IKey = kms.Key(
             self,
             id=f"{name}-table-key",
-            environment_id=self._environment_id,
             description=f"{self._resource_prefix} {name.title()} Table Key",
             alias=f"{self._resource_prefix}-{name}-ddb-table-key",
             enable_key_rotation=True,
@@ -130,12 +149,12 @@ class FoundationsStack(BaseStack):
         return table
 
     def _create_register(self, runtime: lmbda.Runtime) -> None:
-
-        self._register_function: lmbda.IFunction = LambdaFactory.function(
+        self._register_function: lmbda.IFunction = lmbda.Function(
             self,
             id="register-function",
-            environment_id=self._environment_id,
-            code=lmbda.Code.from_asset(os.path.join(f"{Path(__file__).parents[1]}", "src/lambdas/register")),
+            code=lmbda.Code.from_asset(
+                os.path.join(f"{Path(__file__).parents[1]}", "src/lambdas/register")
+            ),
             handler="handler.on_event",
             memory_size=256,
             description="Registers Datasets, Pipelines and Stages into their respective DynamoDB tables",
@@ -143,8 +162,8 @@ class FoundationsStack(BaseStack):
             runtime=runtime,
             environment={
                 "OCTAGON_DATASET_TABLE_NAME": self.datasets.table_name,
-                "OCTAGON_PIPELINE_TABLE_NAME": self.pipelines.table_name
-            }
+                "OCTAGON_PIPELINE_TABLE_NAME": self.pipelines.table_name,
+            },
         )
         self.datasets.grant_read_write_data(self._register_function)
         self.pipelines.grant_read_write_data(self._register_function)
@@ -181,7 +200,7 @@ class FoundationsStack(BaseStack):
                 "s3:GetObjectVersionTagging",
                 "s3:PutObjectTagging",
                 "s3:PutObjectVersionTagging",
-                "s3:PutObject"
+                "s3:PutObject",
             ],
             resources=[
                 f"arn:aws:s3:::{self._resource_prefix}-{self._environment_id}-{cdk.Aws.REGION}-{cdk.Aws.ACCOUNT_ID}-*"
@@ -206,15 +225,14 @@ class FoundationsStack(BaseStack):
         return lakeformation_bucket_registration_role
 
     def _create_bucket(self, name: str) -> Tuple[s3.IBucket, kms.IKey]:
-        bucket_key: kms.IKey = KMSFactory.key(
+        bucket_key: kms.IKey = kms.Key(
             self,
             id=f"{self._resource_prefix}-{name}-bucket-key",
-            environment_id=self._environment_id,
             description=f"{self._resource_prefix} {name.title()} Bucket Key",
             alias=f"{self._resource_prefix}-{name}-bucket-key",
             enable_key_rotation=True,
             pending_window=cdk.Duration.days(30),
-            removal_policy=cdk.RemovalPolicy.DESTROY
+            removal_policy=cdk.RemovalPolicy.DESTROY,
         )
 
         ssm.StringParameter(
@@ -224,17 +242,16 @@ class FoundationsStack(BaseStack):
             string_value=bucket_key.key_arn,
         )
 
-        bucket: s3.IBucket = S3Factory.bucket(
+        bucket: s3.IBucket = s3.Bucket(
             self,
             id=f"{self._resource_prefix}-{name}-bucket",
-            environment_id=self._environment_id,
             bucket_name=f"{self._resource_prefix}-{self._environment_id}-{cdk.Aws.REGION}-{cdk.Aws.ACCOUNT_ID}-{name}",
             encryption=s3.BucketEncryption.KMS,
             encryption_key=bucket_key,
             access_control=s3.BucketAccessControl.BUCKET_OWNER_FULL_CONTROL,
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             removal_policy=cdk.RemovalPolicy.RETAIN,
-            event_bridge_enabled=True
+            event_bridge_enabled=True,
         )
 
         ssm.StringParameter(
@@ -270,13 +287,14 @@ class FoundationsStack(BaseStack):
         return bucket, bucket_key
 
     def _create_sdlf_glue_artifacts(self) -> iam.IRole:
-
         bucket_deployment_role: iam.IRole = iam.Role(  # type: ignore
             self,
             f"{self._resource_prefix}-glue-script-s3-deployment-role",
             assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
             managed_policies=[
-                iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "service-role/AWSLambdaBasicExecutionRole"
+                )
             ],
         )
 
@@ -299,7 +317,11 @@ class FoundationsStack(BaseStack):
             self,
             f"{self._resource_prefix}-glue-stageb-job-role",
             assumed_by=iam.ServicePrincipal("glue.amazonaws.com"),
-            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSGlueServiceRole")],
+            managed_policies=[
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "service-role/AWSGlueServiceRole"
+                )
+            ],
         )
 
         use_kms_key = iam.PolicyStatement(
@@ -314,10 +336,14 @@ class FoundationsStack(BaseStack):
                 "kms:GenerateDataKeyPairWithoutPlaintext",
                 "kms:GenerateDataKeyWithoutPlaintext",
                 "kms:ReEncryptTo",
-                "kms:ReEncryptFrom"
+                "kms:ReEncryptFrom",
             ],
             resources=[f"arn:aws:kms:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:key/*"],
-            conditions={"ForAnyValue:StringLike": {"kms:ResourceAliases": f"alias/{self._resource_prefix}-*-key"}},
+            conditions={
+                "ForAnyValue:StringLike": {
+                    "kms:ResourceAliases": f"alias/{self._resource_prefix}-*-key"
+                }
+            },
         )
 
         list_sdlf_buckets = iam.PolicyStatement(
@@ -379,7 +405,7 @@ class FoundationsStack(BaseStack):
                 "glue:UpdateDatabase",
                 "glue:UpdateJob",
                 "glue:ListSchemas",
-                "glue:ListSchemaVersions"
+                "glue:ListSchemaVersions",
             ],
             resources=["*"],
         )
@@ -390,7 +416,7 @@ class FoundationsStack(BaseStack):
             resources=[
                 f"arn:aws:dynamodb:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:table/"
                 + f"{self._resource_prefix}-{self._environment_id}-*",
-                f"arn:aws:dynamodb:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:table/octagon-*"
+                f"arn:aws:dynamodb:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:table/octagon-*",
             ],
         )
 

@@ -13,16 +13,22 @@
 # limitations under the License.
 
 import logging
-import boto3
 import os
+
+import boto3
 import pkg_resources
 
+from .artifact import Artifact, ArtifactAPI
 from .config import ConfigParser
-from .metadata import OctagonMetadata
 from .event import EventAPI
-from .peh import PipelineExecutionHistoryAPI, PEH_STATUS_COMPLETED, PEH_STATUS_FAILED, PEH_STATUS_CANCELED
-from .artifact import ArtifactAPI, Artifact
+from .metadata import OctagonMetadata
 from .metric import MetricAPI
+from .peh import (
+    PEH_STATUS_CANCELED,
+    PEH_STATUS_COMPLETED,
+    PEH_STATUS_FAILED,
+    PipelineExecutionHistoryAPI,
+)
 
 
 class OctagonClient:
@@ -30,9 +36,13 @@ class OctagonClient:
         self.logger = logging.getLogger(__name__)
         self.region = "us-east-1"
         self.profile = "default"
-        self.configuration_file = pkg_resources.resource_filename(__name__, "octagon-configuration.json")
+        self.configuration_file = pkg_resources.resource_filename(
+            __name__, "octagon-configuration.json"
+        )
         self.configuration_instance = "dev"
-        self.metadata_file = pkg_resources.resource_filename(__name__, "octagon-metadata.json")
+        self.metadata_file = pkg_resources.resource_filename(
+            __name__, "octagon-metadata.json"
+        )
         self.initialized = False
         self.run_in_fargate = False
         self.run_in_lambda = False
@@ -55,7 +65,7 @@ class OctagonClient:
         return self
 
     def with_run_lambda(self, flag: bool):
-        """ Set flag for running in lambda - no need for boto3 init
+        """Set flag for running in lambda - no need for boto3 init
 
         Arguments:
             flag {bool} -- Enable/Disable
@@ -67,7 +77,7 @@ class OctagonClient:
         return self
 
     def with_run_fargate(self, flag: bool):
-        """ Set flag for using AWS_ACCESS_KEY and AWS_SECRET_ACCESS_KEY environment variables for authentication
+        """Set flag for using AWS_ACCESS_KEY and AWS_SECRET_ACCESS_KEY environment variables for authentication
 
         Arguments:
             flag {bool} -- Enable/Disable
@@ -79,7 +89,7 @@ class OctagonClient:
         return self
 
     def with_region(self, region: str):
-        """ Set AWS region
+        """Set AWS region
 
         Arguments:
             region {str} -- AWS region name, e.g "us-east-1"
@@ -127,7 +137,7 @@ class OctagonClient:
         return self
 
     def with_configuration_instance(self, instance: str):
-        """ Set Configuration Instance to be used from Octagon configuration file
+        """Set Configuration Instance to be used from Octagon configuration file
         Arguments:
             instance {str} -- Configuration Instance name
 
@@ -138,7 +148,7 @@ class OctagonClient:
         return self
 
     def build(self):
-        """ Client initialization method """
+        """Client initialization method"""
         # Initialization here
         if self.run_in_fargate:
             if "AWS_ACCESS_KEY" in os.environ and "AWS_SECRET_ACCESS_KEY" in os.environ:
@@ -159,7 +169,9 @@ class OctagonClient:
             pass
 
         else:
-            boto3.setup_default_session(profile_name=self.profile, region_name=self.region)
+            boto3.setup_default_session(
+                profile_name=self.profile, region_name=self.region
+            )
 
         self.account_id = boto3.client("sts").get_caller_identity().get("Account")
 
@@ -171,8 +183,10 @@ class OctagonClient:
 
         return self
 
-    def start_pipeline_execution(self, pipeline_name: str, dataset_date: str = None, comment: str = None) -> str:
-        """ Creates a record for Pipeline Execution History
+    def start_pipeline_execution(
+        self, pipeline_name: str, dataset_date: str = None, comment: str = None
+    ) -> str:
+        """Creates a record for Pipeline Execution History
 
         Arguments:
             pipeline_name {str} -- Name of pipeline (needs to be active)
@@ -184,10 +198,12 @@ class OctagonClient:
         Returns:
             str -- Unique reference to a Pipeline Execution History record (uuid4)
         """
-        return PipelineExecutionHistoryAPI(self).start_pipeline_execution(pipeline_name, dataset_date, comment)
+        return PipelineExecutionHistoryAPI(self).start_pipeline_execution(
+            pipeline_name, dataset_date, comment
+        )
 
     def update_pipeline_execution(self, status: str, component: str = None) -> bool:
-        """ Update status of Pipeline Execution History record
+        """Update status of Pipeline Execution History record
 
         Arguments:
             status {str} -- New status of Pipeline Execution
@@ -196,10 +212,14 @@ class OctagonClient:
         Returns:
             bool -- True if successfull
         """
-        return PipelineExecutionHistoryAPI(self).update_pipeline_execution(status, component=component)
+        return PipelineExecutionHistoryAPI(self).update_pipeline_execution(
+            status, component=component
+        )
 
-    def end_pipeline_execution_failed(self, component: str = None, issue_comment: str = None) -> bool:
-        """ Closes Pipeline Execution History record with FAILED status
+    def end_pipeline_execution_failed(
+        self, component: str = None, issue_comment: str = None
+    ) -> bool:
+        """Closes Pipeline Execution History record with FAILED status
 
         Arguments:
             component {str} -- Optional. Component of Pipeline Execution
@@ -213,7 +233,7 @@ class OctagonClient:
         )
 
     def end_pipeline_execution_success(self, component: str = None) -> bool:
-        """ Closes Pipeline Execution History record with COMPLETED status
+        """Closes Pipeline Execution History record with COMPLETED status
 
         Arguments:
             component {str} -- Optional. Component of Pipeline Execution
@@ -221,10 +241,14 @@ class OctagonClient:
         Returns:
             bool -- True if successfull
         """
-        return PipelineExecutionHistoryAPI(self).update_pipeline_execution(PEH_STATUS_COMPLETED, component=component)
+        return PipelineExecutionHistoryAPI(self).update_pipeline_execution(
+            PEH_STATUS_COMPLETED, component=component
+        )
 
-    def end_pipeline_execution_cancel(self, component: str = None, issue_comment: str = None) -> bool:
-        """ Closes Pipeline execution with CANCELED status
+    def end_pipeline_execution_cancel(
+        self, component: str = None, issue_comment: str = None
+    ) -> bool:
+        """Closes Pipeline execution with CANCELED status
 
         Arguments:
             component {str} -- Optional. Component of Pipeline Execution
@@ -248,8 +272,14 @@ class OctagonClient:
         """
         return PipelineExecutionHistoryAPI(self).retrieve_pipeline_execution(peh_id)
 
-    def create_event(self, reason: str, comment: str, component_name: str = None, event_details: str = None) -> str:
-        """ Create Event for the current pipeline
+    def create_event(
+        self,
+        reason: str,
+        comment: str,
+        component_name: str = None,
+        event_details: str = None,
+    ) -> str:
+        """Create Event for the current pipeline
 
         Arguments:
             reason {str} -- Reason string
@@ -262,10 +292,12 @@ class OctagonClient:
         Returns:
             str -- Unique Event ID (uuid4)
         """
-        return EventAPI(self).create_event(reason, comment, component_name, event_details)
+        return EventAPI(self).create_event(
+            reason, comment, component_name, event_details
+        )
 
     def create_artifact_registration(self, artifact: Artifact) -> str:
-        """ Register artifact for the current pipeline
+        """Register artifact for the current pipeline
 
         Arguments:
             artifact {Artifact} -- Artifact object to register for current pipeline
@@ -276,7 +308,7 @@ class OctagonClient:
         return ArtifactAPI(self).register_artifact(artifact)
 
     def create_metrics(self, date_str: str, metric_code: str, value: int) -> bool:
-        """ Create/add metric value for the current pipeline
+        """Create/add metric value for the current pipeline
 
         Arguments:
             date_str {str} -- ISO 8601 date string to register metric for, e.g. "2019-05-01"
@@ -286,11 +318,12 @@ class OctagonClient:
         Returns:
             bool -- True if successful
         """
-        return MetricAPI(self).create_metrics(date_str=date_str, metric_code=metric_code, value=value)
+        return MetricAPI(self).create_metrics(
+            date_str=date_str, metric_code=metric_code, value=value
+        )
 
     def reset_pipeline_execution(self):
-        """Clears the current pipeline execution
-        """
+        """Clears the current pipeline execution"""
         self.pipeline_execution_id = None
         self.pipeline_name = None
 

@@ -13,45 +13,47 @@
 # limitations under the License.
 
 
-import boto3
 import json
 import sys
 
+import boto3
 
 profile_name = str(sys.argv[1])
 session = boto3.session.Session(profile_name=profile_name)
 
-s3_client = session.client('s3')
-s3_resource = session.resource('s3')
+s3_client = session.client("s3")
+s3_resource = session.resource("s3")
 
 if __name__ == "__main__":
-    try: 
-        with open('delete_file.json') as json_data:
+    try:
+        with open("delete_file.json") as json_data:
             items = json.load(json_data)
             for bucket_name in items["s3"]:
                 print(f"Emptying Content From: {bucket_name}")
                 response = s3_client.list_objects_v2(Bucket=bucket_name)
-                versions = s3_client.list_object_versions(Bucket=bucket_name) # list all versions in this bucket
-                if 'Contents' in response:
-                    for item in response['Contents']:
-                        print('deleting file', item['Key'])
-                        s3_client.delete_object(Bucket=bucket_name, Key=item['Key'])
-                        while response['KeyCount'] == 1000:
+                versions = s3_client.list_object_versions(
+                    Bucket=bucket_name
+                )  # list all versions in this bucket
+                if "Contents" in response:
+                    for item in response["Contents"]:
+                        print("deleting file", item["Key"])
+                        s3_client.delete_object(Bucket=bucket_name, Key=item["Key"])
+                        while response["KeyCount"] == 1000:
                             response = s3_client.list_objects_v2(
-                            Bucket=bucket_name,
-                            StartAfter=response['Contents'][0]['Key'],
+                                Bucket=bucket_name,
+                                StartAfter=response["Contents"][0]["Key"],
                             )
-                            for item in response['Contents']:
-                                print('deleting file', item['Key'])
-                                s3_client.delete_object(Bucket=bucket_name, Key=item['Key'])
-                if 'Versions' in versions and len(versions['Versions'])>0:
+                            for item in response["Contents"]:
+                                print("deleting file", item["Key"])
+                                s3_client.delete_object(
+                                    Bucket=bucket_name, Key=item["Key"]
+                                )
+                if "Versions" in versions and len(versions["Versions"]) > 0:
                     s3_bucket = s3_resource.Bucket(bucket_name)
                     s3_bucket.object_versions.delete()
                 print(f"Bucket: {bucket_name} is Empty")
-            
+
             json_data.close()
 
     except Exception as e:
         print(f"Error: {e}")
-
-

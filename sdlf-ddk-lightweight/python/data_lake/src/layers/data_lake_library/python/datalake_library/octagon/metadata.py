@@ -14,13 +14,21 @@
 
 import json
 import logging
-from .config import ConfigObjectEnum
 import os
+
+from .config import ConfigObjectEnum
 
 
 class FieldMeta:
     def __init__(
-        self, attribute, type, partition_key=False, sort_key=False, generated=False, mandatory=False, composite=False
+        self,
+        attribute,
+        type,
+        partition_key=False,
+        sort_key=False,
+        generated=False,
+        mandatory=False,
+        composite=False,
     ):
         self.attribute = attribute
         self.type = type
@@ -93,19 +101,31 @@ class OctagonMetadata:
         return self.table_meta[octagon_object.value]
 
     def get_metrics_pk(self):
-        return self.get_table_meta(ConfigObjectEnum.OCTAGON_OBJECT_METRICS).get_partition_key()
+        return self.get_table_meta(
+            ConfigObjectEnum.OCTAGON_OBJECT_METRICS
+        ).get_partition_key()
 
     def get_metrics_sk(self):
-        return self.get_table_meta(ConfigObjectEnum.OCTAGON_OBJECT_METRICS).get_sort_key()
+        return self.get_table_meta(
+            ConfigObjectEnum.OCTAGON_OBJECT_METRICS
+        ).get_sort_key()
 
     def get_pipelines_pk(self):
-        return self.get_table_meta(ConfigObjectEnum.OCTAGON_OBJECT_PIPELINES).get_partition_key()
+        return self.get_table_meta(
+            ConfigObjectEnum.OCTAGON_OBJECT_PIPELINES
+        ).get_partition_key()
 
     def get_artifacts_pk(self):
-        return self.get_table_meta(ConfigObjectEnum.OCTAGON_OBJECT_ARTIFACTS).get_partition_key()
+        return self.get_table_meta(
+            ConfigObjectEnum.OCTAGON_OBJECT_ARTIFACTS
+        ).get_partition_key()
 
     def get_peh_pk(self):
-        return self.get_table_meta(ConfigObjectEnum.OCTAGON_OBJECT_PIPELINEHISTORY).get_partition_key()
+        return self.get_table_meta(
+            ConfigObjectEnum.OCTAGON_OBJECT_PIPELINEHISTORY
+        ).get_partition_key()
 
     def get_events_pk(self):
-        return self.get_table_meta(ConfigObjectEnum.OCTAGON_OBJECT_EVENTS).get_partition_key()
+        return self.get_table_meta(
+            ConfigObjectEnum.OCTAGON_OBJECT_EVENTS
+        ).get_partition_key()

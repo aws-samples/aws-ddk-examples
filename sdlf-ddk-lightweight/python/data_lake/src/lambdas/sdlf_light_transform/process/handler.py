@@ -15,10 +15,10 @@
 import os
 import shutil
 
-from datalake_library.commons import init_logger
-from datalake_library.transforms.transform_handler import TransformHandler
 from datalake_library import octagon
+from datalake_library.commons import init_logger
 from datalake_library.octagon import Artifact, EventReasonEnum, peh
+from datalake_library.transforms.transform_handler import TransformHandler
 
 logger = init_logger(__name__)
 
@@ -34,35 +34,40 @@ def lambda_handler(event, context):
         {dict} -- Dictionary with Processed Bucket and Key(s)
     """
     try:
-        logger.info('Fetching event data from previous step')
+        logger.info("Fetching event data from previous step")
         event = event["Payload"]
-        bucket = event['body']['bucket']
-        key = event['body']['key']
-        team = event['body']['team']
-        stage = event['body']['pipeline_stage']
-        dataset = event['body']['dataset']
+        bucket = event["body"]["bucket"]
+        key = event["body"]["key"]
+        team = event["body"]["team"]
+        stage = event["body"]["pipeline_stage"]
+        dataset = event["body"]["dataset"]
 
-        logger.info('Initializing Octagon client')
-        component = context.function_name.split('-')[-2].title()
+        logger.info("Initializing Octagon client")
+        component = context.function_name.split("-")[-2].title()
         octagon_client = (
             octagon.OctagonClient()
             .with_run_lambda(True)
-            .with_configuration_instance(event['body']['env'])
+            .with_configuration_instance(event["body"]["env"])
             .build()
         )
-        peh.PipelineExecutionHistoryAPI(
-            octagon_client).retrieve_pipeline_execution(event['body']['peh_id'])
+        peh.PipelineExecutionHistoryAPI(octagon_client).retrieve_pipeline_execution(
+            event["body"]["peh_id"]
+        )
 
         # Call custom transform created by user and process the file
-        logger.info('Calling user custom processing code')
+        logger.info("Calling user custom processing code")
         transform_handler = TransformHandler().stage_transform(team, dataset, stage)
         response = transform_handler().transform_object(
-            bucket, key, team, dataset)  # custom user code called
-        octagon_client.update_pipeline_execution(status="{} {} Processing".format(stage, component),
-                                                 component=component)
+            bucket, key, team, dataset
+        )  # custom user code called
+        octagon_client.update_pipeline_execution(
+            status="{} {} Processing".format(stage, component), component=component
+        )
     except Exception as e:
         logger.error("Fatal error", exc_info=True)
-        octagon_client.end_pipeline_execution_failed(component=component,
-                                                     issue_comment="{} {} Error: {}".format(stage, component, repr(e)))
+        octagon_client.end_pipeline_execution_failed(
+            component=component,
+            issue_comment="{} {} Error: {}".format(stage, component, repr(e)),
+        )
         raise e
     return response

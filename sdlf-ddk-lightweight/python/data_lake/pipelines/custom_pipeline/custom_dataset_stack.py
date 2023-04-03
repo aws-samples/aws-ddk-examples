@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 from dataclasses import dataclass
 from typing import Any, Optional
-import json
 
 import aws_cdk as cdk
 from aws_cdk.custom_resources import Provider
-from aws_ddk_core.base import BaseStack
+from aws_ddk_core import BaseStack
 from constructs import Construct
 
 
@@ -39,7 +39,7 @@ class CustomDatasetStack(BaseStack):
         environment_id: str,
         resource_prefix: str,
         config: CustomDatasetConfig,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         self._dataset_config: CustomDatasetConfig = config
         self._team = self._dataset_config.team
@@ -49,19 +49,16 @@ class CustomDatasetStack(BaseStack):
         super().__init__(
             scope,
             construct_id,
-            environment_id,
+            environment_id=environment_id,
             stack_name=f"{self._resource_prefix}-CustomDataset-{self._team}"
-                       + f"-{self._dataset}-{environment_id}",
-            **kwargs
+            + f"-{self._dataset}-{environment_id}",
+            **kwargs,
         )
 
         self._stage_a_transform = self._dataset_config.stage_a_transform
 
         self._register_octagon_configs(
-            self._team,
-            self._pipeline,
-            self._dataset,
-            self._stage_a_transform
+            self._team, self._pipeline, self._dataset, self._stage_a_transform
         )
 
     def _register_octagon_configs(
@@ -69,9 +66,11 @@ class CustomDatasetStack(BaseStack):
         team: str,
         pipeline: str,
         dataset_name: str,
-        stage_a_transform: Optional[str] = None
+        stage_a_transform: Optional[str] = None,
     ):
-        self.stage_a_transform: str = stage_a_transform if stage_a_transform else "light_transform_blueprint"
+        self.stage_a_transform: str = (
+            stage_a_transform if stage_a_transform else "light_transform_blueprint"
+        )
 
         self._props = {
             "id": f"{team}-{dataset_name}",
@@ -80,9 +79,7 @@ class CustomDatasetStack(BaseStack):
             "type": "octagon_dataset",
             "pipeline": pipeline,
             "version": 1,
-            "transforms": {
-                "stage_a_transform": self.stage_a_transform
-            }
+            "transforms": {"stage_a_transform": self.stage_a_transform},
         }
 
         service_setup_properties = {"RegisterProperties": json.dumps(self._props)}
@@ -91,5 +88,5 @@ class CustomDatasetStack(BaseStack):
             self,
             f"{self._props['id']}-{self._props['type']}-custom-resource",
             service_token=self._dataset_config.register_provider.service_token,
-            properties=service_setup_properties
+            properties=service_setup_properties,
         )

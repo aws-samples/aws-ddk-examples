@@ -12,19 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 import logging
 import uuid
-import datetime
 from decimal import Decimal
+
 from .utils import (
-    throw_none_or_empty,
-    validate_date,
-    throw_if_false,
-    is_not_empty,
-    get_timestamp_iso,
     get_duration_sec,
     get_local_date,
+    get_timestamp_iso,
     get_ttl,
+    is_not_empty,
+    throw_if_false,
+    throw_none_or_empty,
+    validate_date,
 )
 
 PIPELINE_STATUS_ACTIVE = "ACTIVE"
@@ -36,13 +37,14 @@ PEH_STATUS_CANCELED = "CANCELED"
 
 
 class PipelineExecutionHistoryAPI:
-
     pipelines = dict()  # Pipelines cache across all instances
 
     def __init__(self, client):
         self.logger = logging.getLogger(__name__)
         self.client = client
-        self.pipelines_table = client.dynamodb.Table(client.config.get_pipelines_table())
+        self.pipelines_table = client.dynamodb.Table(
+            client.config.get_pipelines_table()
+        )
         self.peh_table = client.dynamodb.Table(client.config.get_peh_table())
         self.peh_ttl = client.config.get_peh_ttl()
 
@@ -100,7 +102,9 @@ class PipelineExecutionHistoryAPI:
     def update_pipeline_execution(self, status, component=None, issue_comment=None):
         self.logger.debug("peh create_execution() called")
 
-        throw_if_false(self.client.is_pipeline_set(), "Pipeline execution is not yet assigned")
+        throw_if_false(
+            self.client.is_pipeline_set(), "Pipeline execution is not yet assigned"
+        )
         peh_id = self.client.pipeline_execution_id
 
         peh_rec = self.get_peh_record(peh_id)
@@ -118,7 +122,6 @@ class PipelineExecutionHistoryAPI:
         local_date_iso = get_local_date()
 
         if status in [PEH_STATUS_COMPLETED, PEH_STATUS_CANCELED, PEH_STATUS_FAILED]:
-
             duration_sec = get_duration_sec(start_time, utc_time_iso)
 
             if status == PEH_STATUS_COMPLETED:
@@ -140,7 +143,13 @@ class PipelineExecutionHistoryAPI:
             }
 
             if component:
-                history_list = [{"status": status, "timestamp": utc_time_iso, "component": component}]
+                history_list = [
+                    {
+                        "status": status,
+                        "timestamp": utc_time_iso,
+                        "component": component,
+                    }
+                ]
             else:
                 history_list = [{"status": status, "timestamp": utc_time_iso}]
 
@@ -169,17 +178,22 @@ class PipelineExecutionHistoryAPI:
                 update_expr += ", #C = :C"
 
         else:
-
             expr_names = {
                 "#H": "history",
                 "#St": "status",
                 "#V": "version",
                 "#LUT": "last_updated_timestamp",
-                "#STT": "status_last_updated_timestamp"
+                "#STT": "status_last_updated_timestamp",
             }
 
             if component:
-                history_list = [{"status": status, "timestamp": utc_time_iso, "component": component}]
+                history_list = [
+                    {
+                        "status": status,
+                        "timestamp": utc_time_iso,
+                        "component": component,
+                    }
+                ]
             else:
                 history_list = [{"status": status, "timestamp": utc_time_iso}]
 
@@ -189,7 +203,8 @@ class PipelineExecutionHistoryAPI:
                 ":STT": status + "#" + utc_time_iso,
                 ":LUT": utc_time_iso,
                 ":INC": 1,
-                ":V": version}
+                ":V": version,
+            }
             update_expr = "SET #H = list_append(#H, :H), #St = :St, #STT = :STT, #V = :V + :INC, #LUT = :LUT"
 
             if is_not_empty(issue_comment):
@@ -209,10 +224,11 @@ class PipelineExecutionHistoryAPI:
 
         # Add pipeline update for COMPLETED Executions
         if status == PEH_STATUS_COMPLETED:
-
             self.logger.debug(f"Pipeline: {self.client.pipeline_name}")
             item = self.pipelines_table.get_item(
-                Key={"name": self.client.pipeline_name}, ConsistentRead=True, AttributesToGet=["name", "version"]
+                Key={"name": self.client.pipeline_name},
+                ConsistentRead=True,
+                AttributesToGet=["name", "version"],
             )["Item"]
             pipeline_version = item["version"]
 
@@ -250,10 +266,7 @@ class PipelineExecutionHistoryAPI:
 
     def get_peh_record(self, peh_id):
         # self.logger.debug(f"check_peh_active(): {peh_id}")
-        result = self.peh_table.get_item(
-            Key={"id": peh_id},
-            ConsistentRead=True
-        )
+        result = self.peh_table.get_item(Key={"id": peh_id}, ConsistentRead=True)
         # self.logger.debug(f"check_peh_active(): {result}")
 
         if "Item" in result:
@@ -267,7 +280,11 @@ class PipelineExecutionHistoryAPI:
         if pipeline_name not in self.pipelines.keys():  # Pipeline not found in cache
             # Go to DDB and add new pipeline to cache
             self.logger.debug(f"check_pipeline - get from DDB: {pipeline_name}")
-            result = self.pipelines_table.get_item(Key={"name": pipeline_name}, ConsistentRead=True, AttributesToGet=["name", "status"])
+            result = self.pipelines_table.get_item(
+                Key={"name": pipeline_name},
+                ConsistentRead=True,
+                AttributesToGet=["name", "status"],
+            )
             self.logger.debug("result:" + str(result))
 
             if "Item" in result:  # Pipeline found, check status
@@ -280,7 +297,6 @@ class PipelineExecutionHistoryAPI:
         return self.pipelines[pipeline_name]
 
     def retrieve_pipeline_execution(self, peh_id: str):
-
         throw_none_or_empty(peh_id, "Pipeline is not specified")
 
         item = self.get_peh_record(peh_id)

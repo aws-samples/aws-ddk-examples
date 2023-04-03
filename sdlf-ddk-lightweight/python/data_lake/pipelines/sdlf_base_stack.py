@@ -16,20 +16,19 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Protocol, Dict
+from typing import Any, Dict, Protocol
 
 import aws_cdk.aws_lambda as lmbda
 import aws_cdk.aws_ssm as ssm
-from aws_ddk_core.base import BaseStack
+from aws_ddk_core import BaseStack
 from constructs import Construct
 
 from ..foundations import FoundationsStack
-from .standard_pipeline import StandardPipeline
 from .custom_pipeline import CustomPipeline
+from .standard_pipeline import StandardPipeline
 
 
 class SDLFPipeline(Protocol):
-
     PIPELINE_TYPE: str
 
     def register_dataset(self, dataset: str, config: Dict[str, Any]):
@@ -44,17 +43,18 @@ class SDLFBaseStack(BaseStack):
         environment_id: str,
         resource_prefix: str,
         params: Dict[str, Any],
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         self._resource_prefix = resource_prefix
         super().__init__(
             scope,
             construct_id,
-            environment_id,
+            environment_id=environment_id,
             stack_name=f"{self._resource_prefix}-SDLFPipelineStack-{environment_id}",
-            **kwargs
+            **kwargs,
         )
         self._params = params
+        self._environment_id = environment_id
         self._app = self._params.get("app", "datalake")
         self._org = self._params.get("org", "aws")
 
@@ -74,7 +74,7 @@ class SDLFBaseStack(BaseStack):
             resource_prefix=self._resource_prefix,
             app=self._app,
             org=self._org,
-            runtime=lmbda.Runtime.PYTHON_3_9
+            runtime=lmbda.Runtime.PYTHON_3_9,
         )
 
         dataset_names: set[str] = set()
@@ -83,7 +83,9 @@ class SDLFBaseStack(BaseStack):
         for customer_config in customer_configs:
             dataset = customer_config["dataset"]
             team = customer_config["team"]
-            pipeline_type = customer_config.get("pipeline", StandardPipeline.PIPELINE_TYPE)
+            pipeline_type = customer_config.get(
+                "pipeline", StandardPipeline.PIPELINE_TYPE
+            )
 
             # PIPELINE CREATION
             pipeline: SDLFPipeline
@@ -100,7 +102,7 @@ class SDLFBaseStack(BaseStack):
                         wrangler_layer=self._wrangler_layer,
                         app=self._app,
                         org=self._org,
-                        runtime=lmbda.Runtime.PYTHON_3_9
+                        runtime=lmbda.Runtime.PYTHON_3_9,
                     )
                 elif pipeline_type == CustomPipeline.PIPELINE_TYPE:
                     pipeline = CustomPipeline(
@@ -113,7 +115,7 @@ class SDLFBaseStack(BaseStack):
                         wrangler_layer=self._wrangler_layer,
                         app=self._app,
                         org=self._org,
-                        runtime=lmbda.Runtime.PYTHON_3_9
+                        runtime=lmbda.Runtime.PYTHON_3_9,
                     )
                 else:
                     raise NotImplementedError(
@@ -128,8 +130,7 @@ class SDLFBaseStack(BaseStack):
             if dataset_name not in dataset_names:
                 dataset_names.add(dataset_name)
                 pipeline.register_dataset(
-                    dataset,
-                    config=customer_config.get("config", {})
+                    dataset, config=customer_config.get("config", {})
                 )
 
     def _create_wrangler_layer(self):

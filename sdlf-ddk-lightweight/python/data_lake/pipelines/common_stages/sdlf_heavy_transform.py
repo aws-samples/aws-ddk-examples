@@ -13,9 +13,9 @@
 # limitations under the License.
 
 
+import json
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, cast
-import json
 
 import aws_cdk as cdk
 import aws_cdk.aws_events as events
@@ -28,8 +28,7 @@ import aws_cdk.aws_ssm as ssm
 import aws_cdk.aws_stepfunctions as sfn
 import aws_cdk.aws_stepfunctions_tasks as tasks
 from aws_cdk.custom_resources import Provider
-from aws_ddk_core.pipelines import StateMachineStage
-from aws_ddk_core.resources import LambdaFactory
+from aws_ddk_core import StateMachineStage
 from constructs import Construct
 
 
@@ -46,7 +45,6 @@ class SDLFHeavyTransformConfig:
 
 
 class SDLFHeavyTransform(StateMachineStage):
-
     def __init__(
         self,
         scope: Construct,
@@ -58,7 +56,7 @@ class SDLFHeavyTransform(StateMachineStage):
         props: Dict[str, Any],
         **kwargs: Any,
     ) -> None:
-        super().__init__(scope, construct_id, name, **kwargs)
+        super().__init__(scope, id=construct_id, name=name, **kwargs)
 
         self._config: SDLFHeavyTransformConfig = config
         self._environment_id: str = environment_id
@@ -84,9 +82,11 @@ class SDLFHeavyTransform(StateMachineStage):
         check_job_task = self._create_lambda_task("check-job", "$.body.job")
 
         # build state machine
-        self._create_state_machine(process_task, postupdate_task, error_task, check_job_task)
+        self._build_state_machine(
+            process_task, postupdate_task, error_task, check_job_task
+        )
 
-    def _create_state_machine(
+    def _build_state_machine(
         self,
         process_task: tasks.LambdaInvoke,
         postupdate_task: tasks.LambdaInvoke,
@@ -94,36 +94,47 @@ class SDLFHeavyTransform(StateMachineStage):
         check_job_task: tasks.LambdaInvoke,
     ):
         # Success/Failure/Wait States
-        success_state = sfn.Succeed(self, f"{self._prefix}-{self.team}-{self.pipeline}-success")
-        fail_state = sfn.Fail(self, f"{self._prefix}-{self.team}-{self.pipeline}-fail", error="States.ALL")
+        success_state = sfn.Succeed(
+            self, f"{self._prefix}-{self.team}-{self.pipeline}-success"
+        )
+        fail_state = sfn.Fail(
+            self, f"{self._prefix}-{self.team}-{self.pipeline}-fail", error="States.ALL"
+        )
         job_fail_state = sfn.Fail(
             self,
             f"{self._prefix}-{self.team}-{self.pipeline}-job-failed-sm-b",
             cause="Job failed, please check the logs",
-            error="Job Failed"
+            error="Job Failed",
         )
         wait_state = sfn.Wait(
             self,
             f"{self._prefix}-{self.team}-{self.pipeline}-wait-state",
-            time=sfn.WaitTime.duration(cdk.Duration.seconds(15))
+            time=sfn.WaitTime.duration(cdk.Duration.seconds(15)),
         )
 
         # CREATE PARALLEL STATE DEFINITION
-        parallel_state = sfn.Parallel(self, f"{self._prefix}-{self.team}-{self.pipeline}-ParallelSM-B")
+        parallel_state = sfn.Parallel(
+            self, f"{self._prefix}-{self.team}-{self.pipeline}-ParallelSM-B"
+        )
 
         parallel_state.branch(
-            process_task
-            .next(wait_state)
+            process_task.next(wait_state)
             .next(check_job_task)
             .next(
-                sfn.Choice(self, f"{self._prefix}-{self.team}-{self.pipeline}-is job-complete?")
-                .when(
-                    sfn.Condition.string_equals("$.body.job.Payload.jobDetails.jobStatus", "SUCCEEDED"),
-                    postupdate_task
+                sfn.Choice(
+                    self, f"{self._prefix}-{self.team}-{self.pipeline}-is job-complete?"
                 )
                 .when(
-                    sfn.Condition.string_equals("$.body.job.Payload.jobDetails.jobStatus", "FAILED"),
-                    job_fail_state
+                    sfn.Condition.string_equals(
+                        "$.body.job.Payload.jobDetails.jobStatus", "SUCCEEDED"
+                    ),
+                    postupdate_task,
+                )
+                .when(
+                    sfn.Condition.string_equals(
+                        "$.body.job.Payload.jobDetails.jobStatus", "FAILED"
+                    ),
+                    job_fail_state,
                 )
                 .otherwise(wait_state)
             )
@@ -132,37 +143,37 @@ class SDLFHeavyTransform(StateMachineStage):
         parallel_state.next(success_state)
 
         parallel_state.add_catch(
-            error_task,
-            errors=["States.ALL"],
-            result_path=sfn.JsonPath.DISCARD
+            error_task, errors=["States.ALL"], result_path=sfn.JsonPath.DISCARD
         )
 
         error_task.next(fail_state)
 
-        self.build_state_machine(
-            id=f"{self._prefix}-{self.team}-{self.pipeline}-state-machine-b",
-            environment_id=self._environment_id,
-            definition=(
-                parallel_state
-            ),
+        state_object = self._create_state_machine(
+            name=f"{self._prefix}-{self.team}-{self.pipeline}-state-machine-b",
+            definition=(parallel_state),
             additional_role_policy_statements=[
                 iam.PolicyStatement(
                     effect=iam.Effect.ALLOW,
-                    actions=[
-                        "lambda:InvokeFunction"
-                    ],
+                    actions=["lambda:InvokeFunction"],
                     resources=[
                         f"arn:aws:lambda:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:"
                         + f"function:{self._prefix}-{self.team}-{self.pipeline}-*"
-                        ],
+                    ],
                 )
-            ]
+            ],
         )
+
+        self._event_pattern, self._state_machine, self._targets = (
+            state_object.event_pattern,
+            state_object.state_machine,
+            state_object.targets,
+        )
+
         ssm.StringParameter(
             self,
             f"{self._prefix}-{self.team}-{self.pipeline}-state-machine-b-ssm",
             parameter_name=f"/SDLF/SM/{self.team}/{self.pipeline}StageBSM",
-            string_value=self.state_machine.state_machine_arn,
+            string_value=self._state_machine.state_machine_arn,
         )
 
     def _register_octagon_config(self):
@@ -172,7 +183,7 @@ class SDLFHeavyTransform(StateMachineStage):
             self,
             f"{self._props['id']}-{self._props['type']}-custom-resource",
             service_token=self._config.register_provider.service_token,
-            properties=service_setup_properties
+            properties=service_setup_properties,
         )
 
     def _create_lambda_role(self) -> iam.IRole:
@@ -184,9 +195,11 @@ class SDLFHeavyTransform(StateMachineStage):
                 role_name=f"{self._prefix}-lambda-role-{self.team}-{self.pipeline}-b",
                 assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
                 managed_policies=[
-                    iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")
+                    iam.ManagedPolicy.from_aws_managed_policy_name(
+                        "service-role/AWSLambdaBasicExecutionRole"
+                    )
                 ],
-            )
+            ),
         )
 
         iam.ManagedPolicy(
@@ -198,10 +211,7 @@ class SDLFHeavyTransform(StateMachineStage):
                 statements=[
                     iam.PolicyStatement(
                         effect=iam.Effect.ALLOW,
-                        actions=[
-                            "glue:StartJobRun",
-                            "glue:GetJobRun"
-                        ],
+                        actions=["glue:StartJobRun", "glue:GetJobRun"],
                         resources=["*"],
                     ),
                     iam.PolicyStatement(
@@ -212,17 +222,17 @@ class SDLFHeavyTransform(StateMachineStage):
                             "kms:DescribeKey",
                             "kms:Encrypt",
                             "kms:GenerateDataKey*",
-                            "kms:ReEncrypt*"
+                            "kms:ReEncrypt*",
                         ],
                         resources=["*"],
                         conditions={
                             "ForAnyValue:StringLike": {
                                 "kms:ResourceAliases": [
                                     f"alias/{self._prefix}-octagon-*",
-                                    f"alias/{self._prefix}-{self.team}-*"
+                                    f"alias/{self._prefix}-{self.team}-*",
                                 ]
                             }
-                        }
+                        },
                     ),
                     iam.PolicyStatement(
                         effect=iam.Effect.ALLOW,
@@ -237,17 +247,18 @@ class SDLFHeavyTransform(StateMachineStage):
                             "dynamodb:PutItem",
                             "dynamodb:UpdateItem",
                             "dynamodb:DeleteItem",
-                            "dynamodb:DescribeTable"
+                            "dynamodb:DescribeTable",
                         ],
-                        resources=[f"arn:aws:dynamodb:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:table/octagon-*"],
+                        resources=[
+                            f"arn:aws:dynamodb:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:table/octagon-*"
+                        ],
                     ),
                     iam.PolicyStatement(
                         effect=iam.Effect.ALLOW,
-                        actions=[
-                            "ssm:GetParameter",
-                            "ssm:GetParameters"
+                        actions=["ssm:GetParameter", "ssm:GetParameters"],
+                        resources=[
+                            f"arn:aws:ssm:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:parameter/*"
                         ],
-                        resources=[f"arn:aws:ssm:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:parameter/*"],
                     ),
                     iam.PolicyStatement(
                         effect=iam.Effect.ALLOW,
@@ -260,19 +271,19 @@ class SDLFHeavyTransform(StateMachineStage):
                             "sqs:ListQueues",
                             "sqs:GetQueueUrl",
                             "sqs:ListDeadLetterSourceQueues",
-                            "sqs:ListQueueTags"
+                            "sqs:ListQueueTags",
                         ],
-                        resources=[f"arn:aws:sqs:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:{self._prefix}-{self.team}-*"],
+                        resources=[
+                            f"arn:aws:sqs:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:{self._prefix}-{self.team}-*"
+                        ],
                     ),
                     iam.PolicyStatement(
                         effect=iam.Effect.ALLOW,
-                        actions=[
-                            "states:StartExecution"
-                        ],
+                        actions=["states:StartExecution"],
                         resources=[
                             f"arn:aws:states:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:stateMachine:{self._prefix}*"
                         ],
-                    )
+                    ),
                 ]
             ),
         )
@@ -282,10 +293,9 @@ class SDLFHeavyTransform(StateMachineStage):
         return role
 
     def _create_lambda_function(self, step_name: str) -> lmbda.IFunction:
-        return LambdaFactory.function(
+        return lmbda.Function(
             self,
             f"{self._prefix}-{self.team}-{self.pipeline}-{step_name}-b",
-            environment_id=self._environment_id,
             function_name=f"{self._prefix}-{self.team}-{self.pipeline}-{step_name}-b",
             code=lmbda.Code.from_asset(
                 f"data_lake/src/lambdas/sdlf_heavy_transform/{step_name}"
@@ -294,7 +304,7 @@ class SDLFHeavyTransform(StateMachineStage):
             environment={
                 "TEAM": self.team,
                 "PIPELINE": self.pipeline,
-                "STAGE": "StageB"
+                "STAGE": "StageB",
             },
             role=self._lambda_role,
             description=f"exeute {step_name} step of heavy transform.",
@@ -304,20 +314,33 @@ class SDLFHeavyTransform(StateMachineStage):
             runtime=self._config.runtime,
         )
 
-    def _create_lambda_task(self, step_name: str, result_path: Optional[str]) -> tasks.LambdaInvoke:
+    def _create_lambda_task(
+        self, step_name: str, result_path: Optional[str]
+    ) -> tasks.LambdaInvoke:
         lambda_function = self._create_lambda_function(step_name)
 
         lambda_task = tasks.LambdaInvoke(
             self,
             f"{self._prefix}-{self.team}-{self.pipeline}-{step_name}-task-b",
             lambda_function=lambda_function,
-            result_path=result_path
+            result_path=result_path,
         )
 
         return lambda_task
 
-    def get_targets(self) -> Optional[List[events.IRuleTarget]]:
-        return [targets.LambdaFunction(self._routing_lambda), ]
+    @property
+    def targets(self) -> Optional[List[events.IRuleTarget]]:
+        return [
+            targets.LambdaFunction(self._routing_lambda),
+        ]
+
+    @property
+    def state_machine(self):
+        return self._state_machine
+
+    @property
+    def event_pattern(self):
+        return self._event_pattern
 
     @property
     def routing_lambda(self):

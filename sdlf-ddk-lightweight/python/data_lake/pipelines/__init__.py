@@ -14,8 +14,4 @@
 
 from .sdlf_base_stack import SDLFBaseStack, SDLFPipeline
 
-
-__all__ = [
-    "SDLFBaseStack",
-    "SDLFPipeline"
-]
+__all__ = ["SDLFBaseStack", "SDLFPipeline"]

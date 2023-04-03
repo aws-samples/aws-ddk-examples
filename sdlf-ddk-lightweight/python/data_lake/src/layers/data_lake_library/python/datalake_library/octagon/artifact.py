@@ -12,15 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
 import datetime
+import logging
 import uuid
-from .utils import throw_if_false, throw_if_none, get_timestamp_iso, get_local_date, throw_none_or_empty, get_ttl
+
+from .utils import (
+    get_local_date,
+    get_timestamp_iso,
+    get_ttl,
+    throw_if_false,
+    throw_if_none,
+    throw_none_or_empty,
+)
 
 
 class Artifact:
-    """ Data object to handle Artifact information
-    """
+    """Data object to handle Artifact information"""
 
     def __init__(self, dataset, comment=None, component=None):
         """Artifact object initialization
@@ -37,8 +44,10 @@ class Artifact:
         self.comment = comment
         self.component = component
 
-    def with_source_info(self, source_type, source_service_arn, source_location_pointer):
-        """ Set Artifact source information
+    def with_source_info(
+        self, source_type, source_service_arn, source_location_pointer
+    ):
+        """Set Artifact source information
 
         Arguments:
             source_type {str} -- Artifact source type
@@ -48,14 +57,18 @@ class Artifact:
 
         throw_none_or_empty(source_type, "Source type is missing")
         throw_none_or_empty(source_service_arn, "Source service ARN is missing")
-        throw_none_or_empty(source_location_pointer, "Source service locator is missing")
+        throw_none_or_empty(
+            source_location_pointer, "Source service locator is missing"
+        )
 
         self.source_type = source_type
         self.source_service_arn = source_service_arn
         self.source_location_pointer = source_location_pointer
 
-    def with_target_info(self, target_type, target_service_arn, target_location_pointers):
-        """ Set Artifact target information
+    def with_target_info(
+        self, target_type, target_service_arn, target_location_pointers
+    ):
+        """Set Artifact target information
 
         Arguments:
             target_type {str} -- Artifact target type
@@ -64,7 +77,9 @@ class Artifact:
         """
         throw_none_or_empty(target_type, "Target type is missing")
         throw_none_or_empty(target_service_arn, "Target service ARN is missing")
-        throw_none_or_empty(target_location_pointers, "Target location pointers are missing")
+        throw_none_or_empty(
+            target_location_pointers, "Target location pointers are missing"
+        )
 
         self.target_type = target_type
         self.target_service_arn = target_service_arn
@@ -96,11 +111,15 @@ class ArtifactAPI:
     def __init__(self, client):
         self.logger = logging.getLogger(__name__)
         self.client = client
-        self.artifacts_table = client.dynamodb.Table(client.config.get_artifacts_table())
+        self.artifacts_table = client.dynamodb.Table(
+            client.config.get_artifacts_table()
+        )
         self.artifacts_ttl = client.config.get_artifacts_ttl()
 
     def register_artifact(self, artifact: Artifact):
-        throw_if_false(self.client.is_pipeline_set(), "Pipeline execution is not yet assigned")
+        throw_if_false(
+            self.client.is_pipeline_set(), "Pipeline execution is not yet assigned"
+        )
         throw_if_none(artifact, "Artifact is not defined")
 
         current_time = datetime.datetime.utcnow()
@@ -115,7 +134,9 @@ class ArtifactAPI:
         item["timestamp"] = utc_time_iso
         item["date"] = local_date_iso
         item["pipeline_and_target_type"] = item["pipeline"] + "#" + item["target_type"]
-        item["target_location_and_date"] = item["target_location_pointers"][0] + "#" + item["date"]
+        item["target_location_and_date"] = (
+            item["target_location_pointers"][0] + "#" + item["date"]
+        )
         if self.artifacts_ttl > 0:
             item["ttl"] = get_ttl(self.artifacts_ttl)
 
@@ -123,4 +144,6 @@ class ArtifactAPI:
         return item["id"]
 
     def get_artifact(self, id):
-        return self.artifacts_table.get_item(Key={"id": id}, ConsistentRead=True)["Item"]
+        return self.artifacts_table.get_item(Key={"id": id}, ConsistentRead=True)[
+            "Item"
+        ]

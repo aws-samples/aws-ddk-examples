@@ -31,4 +31,6 @@ def clean_table(dynamodb, table_name, pk_name, sk_name=""):
                 if not sk_name:
                     batch.delete_item(Key={pk_name: item[pk_name]})
                 else:
-                    batch.delete_item(Key={pk_name: item[pk_name], sk_name: item[sk_name]})
+                    batch.delete_item(
+                        Key={pk_name: item[pk_name], sk_name: item[sk_name]}
+                    )

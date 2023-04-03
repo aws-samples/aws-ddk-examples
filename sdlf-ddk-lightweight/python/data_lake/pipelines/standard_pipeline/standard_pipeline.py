@@ -12,24 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Dict
 import copy
+from typing import Any, Dict
 
 import aws_cdk as cdk
-import aws_cdk.aws_lambda as lmbda
 import aws_cdk.aws_iam as iam
-from aws_ddk_core.base import BaseStack
-from aws_ddk_core.pipelines import DataPipeline
-from aws_ddk_core.stages import S3EventStage
-from aws_ddk_core.resources import LambdaFactory
-from constructs import Construct
+import aws_cdk.aws_lambda as lmbda
 import aws_cdk.aws_ssm as ssm
-
+from aws_ddk_core import BaseStack, DataPipeline, S3EventStage
+from constructs import Construct
 
 from ...foundations import FoundationsStack
-from ..common_stages import (SDLFHeavyTransform, SDLFHeavyTransformConfig)
-from ..common_stages import (SDLFLightTransform, SDLFLightTransformConfig)
-from .standard_dataset_stack import (StandardDatasetConfig, StandardDatasetStack)
+from ..common_stages import (
+    SDLFHeavyTransform,
+    SDLFHeavyTransformConfig,
+    SDLFLightTransform,
+    SDLFLightTransformConfig,
+)
+from .standard_dataset_stack import StandardDatasetConfig, StandardDatasetStack
+
 
 def get_ssm_value(scope, id: str, parameter_name: str) -> str:
     return ssm.StringParameter.from_string_parameter_name(
@@ -38,8 +39,8 @@ def get_ssm_value(scope, id: str, parameter_name: str) -> str:
         string_parameter_name=parameter_name,
     ).string_value
 
-class StandardPipeline(BaseStack):
 
+class StandardPipeline(BaseStack):
     PIPELINE_TYPE: str = "standard"
 
     def __init__(
@@ -54,14 +55,15 @@ class StandardPipeline(BaseStack):
         app: str,
         org: str,
         runtime: lmbda.Runtime,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         self._team = team
+        self._environment_id = environment_id
         self._resource_prefix = resource_prefix
         super().__init__(
             scope,
             construct_id,
-            environment_id,
+            environment_id=environment_id,
             stack_name=f"{self._resource_prefix}-StandardPipeline-{self._team}-{environment_id}",
             **kwargs,
         )
@@ -69,11 +71,11 @@ class StandardPipeline(BaseStack):
         self._wrangler_layer = wrangler_layer
         self._foundations_stage = foundations_stage
         self._data_lake_library_layer_arn = get_ssm_value(
-                self,
-                "data-lake-library-layer-arn-ssm",
-                parameter_name="/SDLF/Layer/DataLakeLibrary",
-            )
-        
+            self,
+            "data-lake-library-layer-arn-ssm",
+            parameter_name="/SDLF/Layer/DataLakeLibrary",
+        )
+
         self._data_lake_library_layer = lmbda.LayerVersion.from_layer_version_arn(
             self,
             "data-lake-library-layer",
@@ -93,11 +95,8 @@ class StandardPipeline(BaseStack):
         self._s3_event_capture_stage = S3EventStage(
             self,
             id=f"{self._pipeline_id}-s3-event-capture",
-            environment_id=self._environment_id,
-            event_names=[
-                "Object Created"
-            ],
-            bucket_name=self._foundations_stage.raw_bucket.bucket_name
+            event_names=["Object Created"],
+            bucket=self._foundations_stage.raw_bucket,
         )
 
         self._data_lake_light_transform = SDLFLightTransform(
@@ -117,7 +116,7 @@ class StandardPipeline(BaseStack):
                 data_lake_lib=self._data_lake_library_layer,
                 register_provider=self._foundations_stage.register_provider,
                 wrangler_layer=self._wrangler_layer,
-                runtime=self._runtime
+                runtime=self._runtime,
             ),
             props={
                 "version": 1,
@@ -125,7 +124,7 @@ class StandardPipeline(BaseStack):
                 "name": f"{self._team}-{self.PIPELINE_TYPE}-stage-a",
                 "type": "octagon_pipeline",
                 "description": f"{self._resource_prefix} data lake light transform",
-                "id": f"{self._team}-{self.PIPELINE_TYPE}-stage-a"
+                "id": f"{self._team}-{self.PIPELINE_TYPE}-stage-a",
             },
             description=f"{self._resource_prefix} data lake light transform",
         )
@@ -144,7 +143,7 @@ class StandardPipeline(BaseStack):
                 data_lake_lib=self._data_lake_library_layer,
                 register_provider=self._foundations_stage.register_provider,
                 wrangler_layer=self._wrangler_layer,
-                runtime=self._runtime
+                runtime=self._runtime,
             ),
             props={
                 "version": 1,
@@ -152,9 +151,9 @@ class StandardPipeline(BaseStack):
                 "name": f"{self._team}-{self.PIPELINE_TYPE}-stage-b",
                 "type": "octagon_pipeline",
                 "description": f"{self._resource_prefix} data lake heavy transform",
-                "id": f"{self._team}-{self.PIPELINE_TYPE}-stage-b"
+                "id": f"{self._team}-{self.PIPELINE_TYPE}-stage-b",
             },
-            description=f"{self._resource_prefix} data lake heavy transform"
+            description=f"{self._resource_prefix} data lake heavy transform",
         )
         self.routing_b = data_lake_heavy_transform.routing_lambda
 
@@ -165,18 +164,19 @@ class StandardPipeline(BaseStack):
                 name=f"{self._resource_prefix}-DataPipeline-{self._team}-{self.PIPELINE_TYPE}-{self._environment_id}",
                 description=f"{self._resource_prefix} data lake pipeline",
             )
-            .add_stage(self._s3_event_capture_stage)  # type: ignore
-            .add_stage(self._data_lake_light_transform, skip_rule=True)  # configure rule on register_dataset() call
-            .add_stage(data_lake_heavy_transform, skip_rule=True)
+            .add_stage(stage=self._s3_event_capture_stage)  # type: ignore
+            .add_stage(
+                stage=self._data_lake_light_transform, skip_rule=True
+            )  # configure rule on register_dataset() call
+            .add_stage(stage=data_lake_heavy_transform, skip_rule=True)
         )
         return data_lake_heavy_transform
 
     def _create_routing_lambda(self) -> lmbda.IFunction:
         # Lambda
-        routing_function: lmbda.IFunction = LambdaFactory.function(
+        routing_function: lmbda.IFunction = lmbda.Function(
             self,
             id=f"{self._resource_prefix}-{self._team}-{self.PIPELINE_TYPE}-pipeline-routing-function",
-            environment_id=self._environment_id,
             function_name=f"{self._resource_prefix}-{self._team}-{self.PIPELINE_TYPE}-pipeline-routing",
             code=lmbda.Code.from_asset("data_lake/src/lambdas/routing"),
             handler="handler.lambda_handler",
@@ -188,7 +188,7 @@ class StandardPipeline(BaseStack):
                 "ENV": self._environment_id,
                 "APP": self._app,
                 "ORG": self._org,
-                "PREFIX": self._resource_prefix
+                "PREFIX": self._resource_prefix,
             },
         )
         self._foundations_stage.object_metadata.grant_read_write_data(routing_function)
@@ -210,47 +210,46 @@ class StandardPipeline(BaseStack):
                     "kms:ListAliases",
                     "kms:ListGrants",
                     "kms:ListKeys",
-                    "kms:ListKeyPolicies"
+                    "kms:ListKeyPolicies",
                 ],
                 resources=["*"],
                 conditions={
-                    "ForAnyValue:StringLike": {
-                        "kms:ResourceAliases": "alias/*"
-                    }
-                }
+                    "ForAnyValue:StringLike": {"kms:ResourceAliases": "alias/*"}
+                },
             )
         )
         routing_function.add_to_role_policy(
-                iam.PolicyStatement(
-                    effect=iam.Effect.ALLOW,
-                    actions=[
-                        "sqs:SendMessage",
-                        "sqs:DeleteMessage",
-                        "sqs:ReceiveMessage",
-                        "sqs:GetQueueAttributes",
-                        "sqs:ListQueues",
-                        "sqs:GetQueueUrl",
-                        "sqs:ListDeadLetterSourceQueues",
-                        "sqs:ListQueueTags"
-                    ],
-                    resources=[f"arn:aws:sqs:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:{self._resource_prefix}-*"],
-                )
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=[
+                    "sqs:SendMessage",
+                    "sqs:DeleteMessage",
+                    "sqs:ReceiveMessage",
+                    "sqs:GetQueueAttributes",
+                    "sqs:ListQueues",
+                    "sqs:GetQueueUrl",
+                    "sqs:ListDeadLetterSourceQueues",
+                    "sqs:ListQueueTags",
+                ],
+                resources=[
+                    f"arn:aws:sqs:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:{self._resource_prefix}-*"
+                ],
+            )
         )
         routing_function.add_to_role_policy(
-                iam.PolicyStatement(
-                    effect=iam.Effect.ALLOW,
-                    actions=[
-                        "ssm:GetParameter",
-                        "ssm:GetParameters"
-                    ],
-                    resources=[f"arn:aws:ssm:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:parameter/SDLF/*"],
-                )
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=["ssm:GetParameter", "ssm:GetParameters"],
+                resources=[
+                    f"arn:aws:ssm:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}:parameter/SDLF/*"
+                ],
+            )
         )
 
         routing_function.add_permission(
             id="invoke-lambda-eventbridge",
             principal=iam.ServicePrincipal("events.amazonaws.com"),
-            action="lambda:InvokeFunction"
+            action="lambda:InvokeFunction",
         )
 
         return routing_function
@@ -289,8 +288,8 @@ class StandardPipeline(BaseStack):
                 stage_bucket=self._foundations_stage.stage_bucket,
                 stage_bucket_key=self._foundations_stage.stage_bucket_key,
                 glue_role=self._foundations_stage.glue_role,
-                register_provider=self._foundations_stage.register_provider
-            )
+                register_provider=self._foundations_stage.register_provider,
+            ),
         )
 
         # Add S3 object created event pattern
@@ -302,5 +301,5 @@ class StandardPipeline(BaseStack):
         self._data_lake_pipeline.add_rule(
             id=f"{self._pipeline_id}-{dataset}-rule",
             event_pattern=base_event_pattern,
-            event_targets=self._data_lake_light_transform.get_targets()
+            event_targets=self._data_lake_light_transform.targets,
         )

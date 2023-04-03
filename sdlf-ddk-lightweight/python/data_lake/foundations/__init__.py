@@ -15,6 +15,4 @@
 
 from .foundations_stack import FoundationsStack
 
-__all__ = [
-    "FoundationsStack"
-]
+__all__ = ["FoundationsStack"]

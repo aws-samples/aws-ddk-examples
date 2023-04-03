@@ -16,6 +16,7 @@ import json
 import logging
 import os
 from enum import Enum
+
 from .utils import throw_if_false
 
 
@@ -30,7 +31,9 @@ class ConfigObjectEnum(Enum):
 
 
 class ConfigTableInfo:
-    def __init__(self, dynamo_table_name, ttl_in_days=0, read_capacity=0, write_capacity=0):
+    def __init__(
+        self, dynamo_table_name, ttl_in_days=0, read_capacity=0, write_capacity=0
+    ):
         self.dynamo_table_name = dynamo_table_name
         self.ttl_in_days = ttl_in_days
         self.read_capacity = read_capacity

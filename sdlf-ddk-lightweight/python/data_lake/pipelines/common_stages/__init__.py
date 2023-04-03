@@ -13,12 +13,12 @@
 # limitations under the License.
 
 
-from .sdlf_heavy_transform import SDLFHeavyTransformConfig, SDLFHeavyTransform
-from .sdlf_light_transform import SDLFLightTransformConfig, SDLFLightTransform
+from .sdlf_heavy_transform import SDLFHeavyTransform, SDLFHeavyTransformConfig
+from .sdlf_light_transform import SDLFLightTransform, SDLFLightTransformConfig
 
 __all__ = [
     "SDLFHeavyTransformConfig",
     "SDLFHeavyTransform",
     "SDLFLightTransformConfig",
-    "SDLFLightTransform"
+    "SDLFLightTransform",
 ]

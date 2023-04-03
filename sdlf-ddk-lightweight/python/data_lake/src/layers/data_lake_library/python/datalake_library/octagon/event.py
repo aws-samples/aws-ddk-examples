@@ -12,11 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 import logging
 import uuid
-import datetime
 from enum import Enum
-from .utils import throw_none_or_empty, get_local_date, get_timestamp_iso, get_ttl, throw_if_false
+
+from .utils import (
+    get_local_date,
+    get_timestamp_iso,
+    get_ttl,
+    throw_if_false,
+    throw_none_or_empty,
+)
 
 
 class EventReasonEnum(Enum):
@@ -37,13 +44,16 @@ class EventAPI:
         self.events_table = client.dynamodb.Table(client.config.get_events_table())
 
     def create_event(self, reason, comment, component_name=None, event_details=None):
-
-        throw_if_false(self.client.is_pipeline_set(), "Pipeline execution is not yet assigned")
+        throw_if_false(
+            self.client.is_pipeline_set(), "Pipeline execution is not yet assigned"
+        )
 
         throw_none_or_empty(str(reason), "No reason specified")
         throw_none_or_empty(comment, "No comment specified")
 
-        self.logger.debug(f"event create_event() called. Reason : {reason}, comment: {comment}")
+        self.logger.debug(
+            f"event create_event() called. Reason : {reason}, comment: {comment}"
+        )
 
         if isinstance(reason, EventReasonEnum):
             reason_str = reason.value

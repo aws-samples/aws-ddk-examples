@@ -13,10 +13,10 @@
 # limitations under the License.
 
 
+import json
 import logging
 import os
 from typing import Any, Dict, Optional, Union
-import json
 
 import boto3
 from botocore.exceptions import ClientError
@@ -54,32 +54,40 @@ def delete_item(table_name: str, key: Dict[str, str]) -> None:
         raise e
 
 
-def on_create(event: Dict[str, Any], table_name: str, props: Dict[str, Any]) -> Dict[str, str]:
+def on_create(
+    event: Dict[str, Any], table_name: str, props: Dict[str, Any]
+) -> Dict[str, str]:
     physical_id = f"{props['id']}-ddb-item"
     put_item(table_name=table_name, item=props)
     _logger.info(f"Create resource {physical_id} with props {props}")
     return {"PhysicalResourceId": physical_id}
 
 
-def on_update(event: Dict[str, Any], table_name: str, props: Dict[str, Any]) -> Dict[str, str]:
+def on_update(
+    event: Dict[str, Any], table_name: str, props: Dict[str, Any]
+) -> Dict[str, str]:
     physical_id = event["PhysicalResourceId"]
     put_item(table_name=table_name, item=props)
     _logger.info(f"Update resource {physical_id} with props {props}")
     return {"PhysicalResourceId": physical_id}
 
 
-def on_delete(event: Dict[str, Any], table_name: str, props: Dict[str, Any]) -> Dict[str, str]:
+def on_delete(
+    event: Dict[str, Any], table_name: str, props: Dict[str, Any]
+) -> Dict[str, str]:
     physical_id = event["PhysicalResourceId"]
     if "octagon-Pipelines" in table_name or "octagon-Datasets" in table_name:
         delete_item(table_name=table_name, key={"name": props["name"]})
-        _logger.info(f"Delete resource {physical_id} with props {props}") 
+        _logger.info(f"Delete resource {physical_id} with props {props}")
     else:
         delete_item(table_name=table_name, key={"id": props["id"]})
         _logger.info(f"Delete resource {physical_id} with props {props}")
     return {"PhysicalResourceId": physical_id}
 
 
-def on_event(event: Dict[str, Any], context: Optional[Dict[str, Any]]) -> Dict[str, str]:
+def on_event(
+    event: Dict[str, Any], context: Optional[Dict[str, Any]]
+) -> Dict[str, str]:
     _logger.info(f"Received event: {event}")
     request_type = event["RequestType"]
     props = json.loads(event["ResourceProperties"]["RegisterProperties"])
