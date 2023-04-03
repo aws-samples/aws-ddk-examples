@@ -34,13 +34,13 @@ source .venv/bin/activate && pip install -r requirements.txt
 If your AWS account hasn't been used to deploy DDK apps before, then you must bootstrap your environment first:
 
 ```console
-ddk bootstrap
+cdk bootstrap
 ```
 
 You can then deploy your DDK app:
 
 ```console
-ddk deploy
+cdk deploy
 ```
 
 Once the app is provisioned, the CI/CD pipeline builds and packages the artifact.
