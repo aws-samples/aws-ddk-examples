@@ -56,7 +56,7 @@ class DataLakeFramework(BaseStack):  # For NO CICD deployments
     ) -> None:
         self._environment_id = environment_id
         self._resource_prefix = pipeline_params.get("resource_prefix", "ddk")
-        super().__init__(scope, id, environment_id, **kwargs)
+        super().__init__(scope, id, environment_id=environment_id, **kwargs)
 
         self._sdlf_params = pipeline_params.get("data_pipeline_parameters", {})
 
