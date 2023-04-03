@@ -1,8 +1,9 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
+import aws_cdk as cdk
+from aws_cdk.aws_events import EventPattern, IRuleTarget
 from aws_cdk.aws_s3 import Bucket, IBucket
-from aws_ddk_core.pipelines import DataStage
-from aws_ddk_core.resources import S3Factory
+from aws_ddk_core import DataStage
 from constructs import Construct
 
 
@@ -35,12 +36,12 @@ class DummyStage(DataStage):
         self._event_source: str = f"{id}-event-source"
         self._event_detail_type: str = f"{id}-event-type"
 
-        self._bucket = S3Factory.bucket(
+        self._bucket: Bucket = Bucket(
             self,
             "ddk-bucket",
-            environment_id=environment_id,
+            versioned=False,
+            removal_policy=cdk.RemovalPolicy.DESTROY
         )
-
 
     @property
     def bucket(self) -> IBucket:

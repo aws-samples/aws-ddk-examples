@@ -1,7 +1,7 @@
 from typing import Any
 
 from aws_cdk.aws_codeartifact import CfnDomain, CfnRepository
-from aws_ddk_core.base import BaseStack
+from aws_ddk_core import BaseStack
 from constructs import Construct
 
 
@@ -16,7 +16,7 @@ class ArtifactoryStack(BaseStack):
         repository_name: str,
         **kwargs: Any,
     ) -> None:
-        super().__init__(scope, id, environment_id, **kwargs)
+        super().__init__(scope, id, environment_id=environment_id, **kwargs)
 
         domain = CfnDomain(
             self,
