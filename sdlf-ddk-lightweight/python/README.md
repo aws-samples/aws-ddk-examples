@@ -117,20 +117,6 @@ The following AWS services are required for this utility:
 
 At this time, the file is unzipped and you are in the directory. You will follow a set of commands depicted in the diagram below to configure and deploy SDLF using DDK.
 
-Continue to the steps below to set up DDK:
-
-Install AWS DDK CLI, a command line interface to manage your DDK apps
-
-```
-$ pip install aws-ddk
-```
-
-To verify the installation, run:
-
-```
-$ ddk --help
-```
-
 Create and activate a virtualenv
 
 ```
@@ -146,20 +132,27 @@ $ pip install -r requirements.txt --no-cache-dir
 <br />
 <br />
 
-### Bootstrapping with Default Admin Policy
+### CDK Bootstrapping
 
 <br />
 
-If your AWS account hasn't been used to deploy DDK apps before, then you need to bootstrap your environment for both the `cicd` and the `dev` environments, you can skip cicd bootstrap as well as `-a` in the dev bootstrap if you are not using the cicd deployment
+If your AWS account/s hasn't been used to deploy DDK apps before, then you need to bootstrap your environment for both the `cicd` and the `dev` environments depending upon if they are same account region or multi account region
+
+If they are same account region
 
 ```
-$ ddk bootstrap --help
-$ ddk bootstrap --profile [AWS_PROFILE] -e cicd
+$ cdk bootstrap --profile [AWS_PROFILE] or cdk bootstrap aws://ACCOUNT-NUMBER-1/REGION-1
 ```
 
+If they are different account region 
+
 ```
-$ ddk bootstrap --help
-$ ddk bootstrap --profile [AWS_PROFILE] -e dev -a [CICD_ACCOUNT]
+$ cdk bootstrap --profile [AWS_PROFILE_DEV] or cdk bootstrap aws://ACCOUNT-NUMBER-1/REGION-1
+$ cdk bootstrap --profile [AWS_PROFILE_CICD] or cdk bootstrap aws://ACCOUNT-NUMBER-1/REGION-1
+
+or 
+
+$ cdk bootstrap aws://ACCOUNT-NUMBER-1/REGION-1 aws://ACCOUNT-NUMBER-1/REGION-1
 ```
 
 <br />
@@ -179,7 +172,7 @@ Click the `Save` button on the bottom right-hand side of the page when done.
 Next, click on `Administrative roles and tasks` on the left-hand side menu and click on `Choose Administrators`. Add both:
 
 - Your current IAM role as a Data Lake administrator
-- The `CloudFormationExecutionRole` IAM role name returned by the DDK Bootstrap Stack for the environment you are deploying to (e.g. `ddk-ENV-hnb659fds-cfn-exec-ACCOUNTID-REGION`)
+- The `CloudFormationExecutionRole` IAM role name returned by the DDK Bootstrap Stack for the environment you are deploying to (e.g. `cdk-hnb659fds-cfn-exec-role-ACCOUNTID-REGION`)
 
 <br />
 <br />
@@ -226,7 +219,7 @@ Execute the create repository command to create a new codecommit repository in t
 _NOTE: Make Sure the REPO_NAME matches the repository name value in the `cicd` environment of the `ddk.json` file or vice versa before executing_
 
 ```
-$ ddk create-repository REPO_NAME --profile [AWS_PROFILE] --region [AWS_REGION]
+$ aws codecommit create-repository --repository-name REPO_NAME --profile [AWS_PROFILE] --region [AWS_REGION]
 ```
 
 Add and push the initial commit to the repository
@@ -249,7 +242,7 @@ Once the above steps are performed, verify the below and run the deploy command 
 2.  `parameters.json` file is updated if required
 
 ```
-$ ddk deploy --profile [AWS_PROFILE]
+$ cdk deploy --profile [AWS_PROFILE_CICD]
 ```
 
 The deploy all step deploys an AWS CICD CodePipeline along with its respective AWS CloudFormation Stacks. The last stage of each pipeline delivers the SDLF Data Lake infrastructure respectively in the child (default dev) environment through CDK/CloudFormation.
@@ -482,7 +475,7 @@ _NOTE:_ Before running this command, look into the `Makefile` and ensure that:
 
 1.  The `delete_repositories` function is passing the correct `-d REPO_NAME` (default: `sdlf-ddk-example`)
 
-2.  The `delete_bootstrap` or `delete_bootstrap_no_cicd` function is passing the correct `--stack-name BOOTSTRAP_STACK_NAME` (default: `DdkDevBootstrap`)
+2.  The `delete_bootstrap` or `delete_bootstrap_no_cicd` function is passing the correct `--stack-name BOOTSTRAP_STACK_NAME` (default: `CDKToolkit`)
 
 3.  For Single account deployment, make sure you change the `CICD`, `CHILD` variables to your same respective aws profile name. Also update the `ENV` matching `ddk.json`
 

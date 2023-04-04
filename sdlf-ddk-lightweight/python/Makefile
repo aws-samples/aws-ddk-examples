@@ -41,11 +41,11 @@ delete_sdlf_no_cicd:
 	cdk destroy sdlf-ddk-dev --force --profile ${CHILD}
 	
 delete_bootstrap:
-	aws cloudformation delete-stack --stack-name DdkDevBootstrap --profile ${CHILD}
-	aws cloudformation delete-stack --stack-name DdkCicdBootstrap --profile ${CICD}
+	aws cloudformation delete-stack --stack-name CDKToolkit --profile ${CHILD}
+	aws cloudformation delete-stack --stack-name CDKToolkit --profile ${CICD}
 
 delete_bootstrap_no_cicd:
-	aws cloudformation delete-stack --stack-name DdkDevBootstrap --profile ${CHILD}
+	aws cloudformation delete-stack --stack-name CDKToolkit --profile ${CHILD}
 
 delete_all_items:
 	sleep 120
