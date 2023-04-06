@@ -107,7 +107,8 @@ Confirm that the DIDC DynamoDB Table now has been populated with these sample me
 2. Run the following command from your command line (replacing the `AWS_PROFILE` with your AWS Profile Name).
 
 ```
-$ sh utils/demo/deploy.sh AWS_PROFILE
+$ cd utils/demo
+$ sh deploy.sh AWS_PROFILE AWS_REGION
 ```
 
 This shell script will first copy 4 sample parquet data files to the raw S3 Bucket under the `data/` prefix. Once data is in S3, a manifest file will be copied to the raw S3 Bucket under the `manifest/` prefix to trigger the data validation and cataloging state machine to invoke.

@@ -110,6 +110,10 @@ This command should launch a CloudFormation template in the AWS account and regi
 
 Once the CloudFormation stack has been successfully created, your AWS account now has the data pipeline outlined in the architecture section of this readme! 
 
+# Lakeformation 
+
+If you have enabled lakeformation then you will need to add permissions manually for the roles, in this example, it relies on IAM.
+
 ## Testing the Data Pipeline
 
 To test the data pipeline, you will upload a file data.json to S3 using a shell command included in this repo. Within the "utils/data" prefix, the script will upload the data to a top-level prefix to identify the dataset.
