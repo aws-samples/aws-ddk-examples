@@ -203,6 +203,7 @@ $ aws codecommit create-repository --repository-name REPO_NAME --profile [AWS_PR
 Add and push the initial commit to the repository
 
 ```
+$ git remote add orign {URL}
 $ git add .
 $ git commit -m "Configure DDK Data Pipeline"
 $ git push --set-upstream origin main

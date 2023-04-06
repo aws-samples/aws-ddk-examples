@@ -80,6 +80,7 @@ pipeline = CICDPipelineStack(
     id=pipeline_name,
     environment_id="cicd",
     pipeline_name=pipeline_name,
+    cdk_language="python",
     env=cdk.Environment(
         account=cicd_config.get_config_attribute("account"),
         region=cicd_config.get_config_attribute("region"),
