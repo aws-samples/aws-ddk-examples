@@ -24,6 +24,7 @@ If you would like to start your journey by looking at an example, we recommend y
 | [Google Analytics Appflow Data Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/appflow_athena)                          |
 | [Athena Query Execution Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/athena-query-execution-pipeline)                |
 | [Athena Views Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/athena-views-pipeline)                                    |
+| [DataBrew Athena Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/databrew-athena)                                       |
 | [Private Artifactory](https://github.com/aws-samples/aws-ddk-examples/tree/main/private_artifactory)                                        |
 | [Cross-Account / Cross-Region Data Pipelines](https://github.com/aws-samples/aws-ddk-examples/tree/main/cross-account-region-data-pipeline) |
 | [Data Validation & Cataloging Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/data-validation-cataloging-pipeline)      |
