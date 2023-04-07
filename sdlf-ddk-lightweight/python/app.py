@@ -85,6 +85,7 @@ if cicd_enabled:
         id=PIPELINE_NAME,
         environment_id="cicd",
         pipeline_name=PIPELINE_NAME,
+        cdk_language="python",
         env=cdk.Environment(
             account=cicd_config.get("account"), region=cicd_config.get("region")
         ),
