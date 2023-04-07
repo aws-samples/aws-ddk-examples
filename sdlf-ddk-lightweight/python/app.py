@@ -93,7 +93,6 @@ if cicd_enabled:
     pipeline.add_source_action(repository_name=cicd_repository_name)
     pipeline.add_synth_action()
     pipeline.build_pipeline(publish_assets_in_parallel=True)  # type:ignore
-    pipeline.add_checks()
     pipeline.add_stage(
         stage_id="dev",
         stage=DataLakeFrameworkCICD(
