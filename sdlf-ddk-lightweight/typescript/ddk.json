@@ -4,9 +4,7 @@
       "account": "111111111111",
       "region": "us-east-1",
       "repository": "sdlf-ddk-example",
-      "execute_security_lint": true,
-      "execute_tests": false,
-      "cicd_enabled": true
+      "cicd_enabled": false
     },
     "dev": {
       "account": "111111111111",

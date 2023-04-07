@@ -11,7 +11,6 @@ import {
   BaseStack,
   BaseStackProps,
   DataPipeline,
-  LambdaDefaults,
   S3EventStage
 } from 'aws-ddk-core';
 import { Construct } from 'constructs';

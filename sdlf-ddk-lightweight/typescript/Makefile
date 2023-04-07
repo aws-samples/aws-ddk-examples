@@ -3,9 +3,9 @@ CICD=default
 CHILD=default
 REGION=$(shell aws configure get region --profile ${CICD})
 ENV=dev
-CHILD_STACKS=$(shell cdk list --notices=false | grep "sdlf-ddk-${ENV}/" | tr '\n' ' ')
 CICD_ENABLED=${shell jq .environments.cicd.cicd_enabled ddk.json}
-
+#CHILD_STACKS=$(shell cdk list --notices=false | grep "sdlf-ddk-${ENV}/" | tr '\n' ' ') #CICD
+CHILD_STACKS=$(shell cdk list --notices=false | grep "sdlf-data-lake-pipeline/" | tr '\n' ' ') #NoCICD
 
 .PHONY: empty_buckets delete_sdlf delete_sdlf_no_cicd delete_bootstrap delete_bootstrap_no_cicd delete_repositories delete_all_items cdk_synth_to_yaml
 
@@ -33,19 +33,18 @@ empty_buckets:
 	
 delete_sdlf:
 	cdk destroy ${CHILD_STACKS} --force --profile ${CHILD}
-
-	cdk destroy sdlf-ddk-pipeline --force --profile ${CICD}
+	cdk destroy sdlf-ddk-${ENV} --force --profile ${CICD}
 
 delete_sdlf_no_cicd:
 	cdk destroy ${CHILD_STACKS} --force --profile ${CHILD}
-	cdk destroy sdlf-ddk-dev --force --profile ${CHILD}
+	cdk destroy sdlf-data-lake-pipeline --force --profile ${CHILD}
 	
 delete_bootstrap:
-	aws cloudformation delete-stack --stack-name DdkDevBootstrap --profile ${CHILD}
-	aws cloudformation delete-stack --stack-name DdkCicdBootstrap --profile ${CICD}
+	aws cloudformation delete-stack --stack-name CDKToolkit --profile ${CHILD}
+	aws cloudformation delete-stack --stack-name CDKToolkit --profile ${CICD}
 
 delete_bootstrap_no_cicd:
-	aws cloudformation delete-stack --stack-name DdkDevBootstrap --profile ${CHILD}
+	aws cloudformation delete-stack --stack-name CDKToolkit --profile ${CHILD}
 
 delete_all_items:
 	sleep 120

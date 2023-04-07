@@ -10,7 +10,7 @@ import * as cr from 'aws-cdk-lib/custom-resources';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
-import { BaseStack, BaseStackProps, KmsDefaults } from 'aws-ddk-core';
+import { BaseStack, BaseStackProps} from 'aws-ddk-core';
 import { Construct } from 'constructs';
 
 export interface StandardDatasetConfig {
