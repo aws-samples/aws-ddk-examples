@@ -12,8 +12,6 @@ import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as tasks from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import * as cr from 'aws-cdk-lib/custom-resources';
 import {
-  LambdaDefaults,
-  KmsDefaults,
   SqsToLambdaStage,
   StateMachineStage,
   StateMachineStageProps
@@ -127,13 +125,13 @@ export class SDLFLightTransform extends StateMachineStage {
     const sqsKey = new kms.Key(
       this,
       `${this.prefix}-${this.team}-${this.pipeline}-sqs-key-a`,
-      KmsDefaults.keyProps({
+      {
         description: `${this.prefix} SQS Key Stage A`,
         alias: `${this.prefix}-${this.team}-${this.pipeline}-sqs-stage-a-key`,
         enableKeyRotation: true,
         pendingWindow: cdk.Duration.days(30),
         removalPolicy: cdk.RemovalPolicy.DESTROY
-      })
+      }
     );
 
     const routingDeadLetterQueue = new sqs.Queue(

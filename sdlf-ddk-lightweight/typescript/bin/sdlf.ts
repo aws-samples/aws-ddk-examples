@@ -75,7 +75,7 @@ if (cicdEnabled) {
       stageId: "dev",
       stage: new DataLakeFrameworkCICD(
           satelliteApp,
-          getConfig({}).environments.dev,
+          getConfig({}) ? getConfig({})?.environments.dev : {},
           "dev",
           {},
       ),
@@ -87,6 +87,6 @@ else {
     satelliteApp,
     "dev",
     {},
-    getConfig({}).environments.dev,
+    getConfig({}) ? getConfig({})?.environments.dev : {},
   )
 }

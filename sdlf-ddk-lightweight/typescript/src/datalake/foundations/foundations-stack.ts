@@ -9,7 +9,7 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as s3Deployment from 'aws-cdk-lib/aws-s3-deployment';
 import * as cr from 'aws-cdk-lib/custom-resources';
-import { BaseStack, LambdaDefaults, S3Defaults } from 'aws-ddk-core';
+import { BaseStack, S3Factory } from 'aws-ddk-core';
 
 import { Construct } from 'constructs';
 
@@ -50,7 +50,7 @@ export class FoundationsStack extends BaseStack {
   constructor(scope: Construct, id: string, props: FoundationsStackProps) {
     super(
       scope,
-      `${props.resourcePrefix}-FoundationsStack-${props.environmentId}`,
+      `${props.resourcePrefix}-foundations-${props.environmentId}`,
       props
     );
     this.resourcePrefix = props.resourcePrefix;
@@ -129,7 +129,7 @@ export class FoundationsStack extends BaseStack {
     const registerFunction = new lambda.Function(
       this,
       'register-function',
-      LambdaDefaults.functionProps({
+      {
         code: lambda.Code.fromAsset(
           path.join(__dirname, '../src/lambdas/register/')
         ),
@@ -143,7 +143,7 @@ export class FoundationsStack extends BaseStack {
           OCTAGON_DATASET_TABLE_NAME: this.datasets.tableName,
           OCTAGON_PIPELINE_TABLE_NAME: this.pipelines.tableName
         }
-      })
+      }
     );
     this.datasets.grantReadWriteData(registerFunction);
     this.pipelines.grantReadWriteData(registerFunction);
@@ -174,10 +174,10 @@ export class FoundationsStack extends BaseStack {
       }
     );
 
-    const bucket = new s3.Bucket(
+    const bucket = S3Factory.bucket(
       this,
       `${this.resourcePrefix}-${name}-bucket`,
-      S3Defaults.bucketProps({
+      {
         bucketName: `${this.resourcePrefix}-${this.environmentId}-${cdk.Aws.REGION}-${cdk.Aws.ACCOUNT_ID}-${name}`,
         encryption: s3.BucketEncryption.KMS,
         encryptionKey: bucketKey,
@@ -185,7 +185,7 @@ export class FoundationsStack extends BaseStack {
         blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
         removalPolicy: cdk.RemovalPolicy.RETAIN,
         eventBridgeEnabled: true
-      })
+      }
     );
 
     new ssm.StringParameter(

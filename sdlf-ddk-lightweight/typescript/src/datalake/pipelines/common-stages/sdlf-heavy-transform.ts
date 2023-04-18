@@ -11,7 +11,6 @@ import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as tasks from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import * as cr from 'aws-cdk-lib/custom-resources';
 import {
-  LambdaDefaults,
   StateMachineStage,
   StateMachineStageProps
 } from 'aws-ddk-core';
@@ -212,7 +211,7 @@ export class SDLFHeavyTransform extends StateMachineStage {
     return new lambda.Function(
       this,
       `${this.prefix}-${this.team}-${this.pipeline}-${stepName}-b`,
-      LambdaDefaults.functionProps({
+      {
         functionName: `${this.prefix}-${this.team}-${this.pipeline}-${stepName}-b`,
         code: lambda.Code.fromAsset(
           path.join(
@@ -232,7 +231,7 @@ export class SDLFHeavyTransform extends StateMachineStage {
         memorySize: 256,
         layers: [this.config.datalakeLib, this.config.wranglerLayer],
         runtime: this.config.runtime
-      })
+      }
     );
   }
   protected createLambdaTask(
