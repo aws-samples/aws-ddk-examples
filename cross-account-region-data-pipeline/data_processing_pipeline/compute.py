@@ -5,7 +5,13 @@ from typing import Any, Dict
 from aws_cdk.aws_events import CfnEventBusPolicy
 from aws_cdk.aws_lambda import Code, Runtime
 from aws_cdk.aws_s3 import Bucket, IBucket
-from aws_ddk_core import BaseStack, DataPipeline, S3EventStage, SqsToLambdaStage
+from aws_ddk_core import (
+    BaseStack,
+    Configurator,
+    DataPipeline,
+    S3EventStage,
+    SqsToLambdaStage,
+)
 from constructs import Construct
 
 
@@ -16,17 +22,17 @@ class DataProcessingPipeline(BaseStack):
         id: str,
         environment_id: str,
         mode: str,
-        storage_params: Dict,
+        storage_params: Configurator,
         **kwargs: Any,
     ) -> None:
         super().__init__(scope, id, environment_id=environment_id, **kwargs)
         self._environment_id = environment_id
         self._mode = mode
-        self._s3_bucket_name = storage_params.get("s3BucketName")
+        self._s3_bucket_name = storage_params.get_config_attribute("s3BucketName")
         s3_bucket: IBucket = Bucket.from_bucket_name(
             self, "bucket-name", bucket_name=self._s3_bucket_name
         )
-        self._storage_account = storage_params.get("account")
+        self._storage_account = storage_params.get_config_attribute("account")
 
         data_lake_s3_event_capture_stage = S3EventStage(
             self,

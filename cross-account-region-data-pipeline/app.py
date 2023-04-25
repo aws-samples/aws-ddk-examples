@@ -96,9 +96,7 @@ pipeline.add_stage(
         app,
         environment_id="stor",
         mode=mode,
-        compute_params=Configurator.get_env_config(
-            config_path="./ddk.json", environment_id="comp"
-        ),
+        compute_params=comp_config,
         env=cdk.Environment(
             account=stor_config.get_config_attribute("account"),
             region=stor_config.get_config_attribute("region"),
@@ -111,15 +109,14 @@ pipeline.add_stage(
         app,
         environment_id="comp",
         mode=mode,
-        storage_params=Configurator.get_env_config(
-            config_path="./ddk.json", environment_id="stor"
-        ),
+        storage_params=stor_config,
         env=cdk.Environment(
             account=comp_config.get_config_attribute("account"),
             region=comp_config.get_config_attribute("region"),
         ),
     ),
 )
+
 #######################
 
 app.synth()

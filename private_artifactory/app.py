@@ -12,7 +12,7 @@ ENVIRONMENT_ID = "dev"
 DOMAIN_NAME = "ddk-lib-domain"
 env_config = Configurator.get_env_config(
     config_path="./ddk.json", environment_id=ENVIRONMENT_ID
-)
+)._values
 DOMAIN_OWNER = env_config["account"]
 REPOSITORY_NAME = "ddk-lib-repository"
 PIPELINE_NAME = "ddk-lib-pipeline"

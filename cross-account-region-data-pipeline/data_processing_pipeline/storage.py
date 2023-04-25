@@ -4,12 +4,18 @@ import aws_cdk as cdk
 import aws_cdk.aws_events as events
 from aws_cdk.aws_events import Rule
 from aws_cdk.aws_events_targets import EventBus
-from aws_cdk.aws_iam import (AccountPrincipal, Effect, ManagedPolicy,
-                             PolicyStatement, Role, ServicePrincipal)
+from aws_cdk.aws_iam import (
+    AccountPrincipal,
+    Effect,
+    ManagedPolicy,
+    PolicyStatement,
+    Role,
+    ServicePrincipal,
+)
 from aws_cdk.aws_kms import Key
 from aws_cdk.aws_s3 import Bucket, BucketAccessControl, BucketEncryption
 from aws_cdk.aws_ssm import StringParameter
-from aws_ddk_core import BaseStack, S3EventStage
+from aws_ddk_core import BaseStack, Configurator, S3EventStage
 from constructs import Construct
 
 
@@ -20,15 +26,15 @@ class DataStorage(BaseStack):
         id: str,
         environment_id: str,
         mode: str,
-        compute_params: Dict,
+        compute_params: Configurator,
         **kwargs: Any,
     ) -> None:
         super().__init__(scope, id, environment_id=environment_id, **kwargs)
         self._environment_id = environment_id
-        self._S3_NAME = compute_params.get("s3BucketName")
+        self._S3_NAME = compute_params.get_config_attribute("s3BucketName")
         self._mode = mode
-        self._compute_account = compute_params.get("account")
-        self._compute_region = compute_params.get("region")
+        self._compute_account = compute_params.get_config_attribute("account")
+        self._compute_region = compute_params.get_config_attribute("region")
 
         self._raw_bucket = self._create_bucket(name=self._S3_NAME)
 
