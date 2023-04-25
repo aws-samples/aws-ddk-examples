@@ -26,15 +26,23 @@ class DataLakeFrameworkCICD(cdk.Stage):  # For CICD Deployments
     def __init__(
         self,
         scope: Construct,
-        pipeline_params: Dict[str, Any],
+        pipeline_params: Configurator,
         environment_id: str,
         **kwargs: Any,
     ) -> None:
         self._environment_id = environment_id
-        self._resource_prefix = pipeline_params.get("resource_prefix", "ddk")
+        self._resource_prefix = (
+            pipeline_params.get_config_attribute("resource_prefix")
+            if pipeline_params.get_config_attribute("resource_prefix")
+            else "ddk"
+        )
         super().__init__(scope, f"sdlf-ddk-{environment_id}", **kwargs)
 
-        self._sdlf_params = pipeline_params.get("data_pipeline_parameters", {})
+        self._sdlf_params = (
+            pipeline_params.get_config_attribute("data_pipeline_parameters")
+            if pipeline_params.get_config_attribute("data_pipeline_parameters")
+            else {}
+        )
 
         SDLFBaseStack(
             self,
@@ -50,15 +58,23 @@ class DataLakeFramework(BaseStack):  # For NO CICD deployments
         self,
         scope: Construct,
         id: str,
-        pipeline_params: Dict[str, Any],
+        pipeline_params: Configurator,
         environment_id: str,
         **kwargs: Any,
     ) -> None:
         self._environment_id = environment_id
-        self._resource_prefix = pipeline_params.get("resource_prefix", "ddk")
+        self._resource_prefix = (
+            pipeline_params.get_config_attribute("resource_prefix")
+            if pipeline_params.get_config_attribute("resource_prefix")
+            else "ddk"
+        )
         super().__init__(scope, id, environment_id=environment_id, **kwargs)
 
-        self._sdlf_params = pipeline_params.get("data_pipeline_parameters", {})
+        self._sdlf_params = (
+            pipeline_params.get_config_attribute("data_pipeline_parameters")
+            if pipeline_params.get_config_attribute("data_pipeline_parameters")
+            else {}
+        )
 
         SDLFBaseStack(
             self,
@@ -71,13 +87,19 @@ class DataLakeFramework(BaseStack):  # For NO CICD deployments
 
 satellite_app = cdk.App()
 PIPELINE_NAME = "sdlf-ddk-pipeline"
-dev_config = Configurator.get_env_config(config_path="./ddk.json", environment_id="dev")
-cicd_config = Configurator.get_env_config(
-    config_path="./ddk.json", environment_id="cicd"
+dev_config = Configurator(satellite_app, "./ddk.json", "dev")
+cicd_config = Configurator(satellite_app, "./ddk.json", "cicd")
+cicd_repository_name = (
+    cicd_config.get_config_attribute("repository")
+    if cicd_config.get_config_attribute("repository")
+    else "sdlf-ddk-example"
 )
-cicd_repository_name = cicd_config.get("repository", "sdlf-ddk-example")
 
-cicd_enabled = cicd_config.get("cicd_enabled", False)
+cicd_enabled = (
+    cicd_config.get_config_attribute("cicd_enabled")
+    if cicd_config.get_config_attribute("cicd_enabled")
+    else False
+)
 
 if cicd_enabled:
     pipeline = CICDPipelineStack(
@@ -87,7 +109,8 @@ if cicd_enabled:
         pipeline_name=PIPELINE_NAME,
         cdk_language="python",
         env=cdk.Environment(
-            account=cicd_config.get("account"), region=cicd_config.get("region")
+            account=cicd_config.get_config_attribute("account"),
+            region=cicd_config.get_config_attribute("region"),
         ),
     )
     pipeline.add_source_action(repository_name=cicd_repository_name)
@@ -101,7 +124,8 @@ if cicd_enabled:
             environment_id="dev",
             pipeline_params=dev_config,
             env=cdk.Environment(
-                account=dev_config.get("account"), region=dev_config.get("region")
+                account=dev_config.get_config_attribute("account"),
+                region=dev_config.get_config_attribute("region"),
             ),
         ),
     )
@@ -113,7 +137,8 @@ else:
         environment_id="dev",
         pipeline_params=dev_config,
         env=cdk.Environment(
-            account=dev_config.get("account"), region=dev_config.get("region")
+            account=dev_config.get_config_attribute("account"),
+            region=dev_config.get_config_attribute("region"),
         ),
     )
 
