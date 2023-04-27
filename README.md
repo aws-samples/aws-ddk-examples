@@ -17,6 +17,9 @@ It is assumed that you are already somewhat familiar with the AWS DDK. If not, w
 
 If you would like to start your journey by looking at an example, we recommend you to start with [Kinesis to S3 Data Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/basic-data-pipeline) example from the list below.
 
+> **Prerelease Versions of DDK (1.0.0)**
+> [See here](https://github.com/aws-samples/aws-ddk-examples/tree/release-1.0.0) for examples using the `1.0.0beta` version of the library.
+
 ## Examples <a name="Examples"></a>
 | Examples                                                                                                                                    |
 |---------------------------------------------------------------------------------------------------------------------------------------------|
