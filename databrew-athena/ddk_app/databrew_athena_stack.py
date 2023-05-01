@@ -44,9 +44,7 @@ class DataBrewAthenaStack(BaseStack):
 
         marketing_database = self._create_database(database_name="marketing_data")
 
-        self._create_pipeline(
-            marketing_job, output_bucket, marketing_database
-        )
+        self._create_pipeline(marketing_job, output_bucket, marketing_database)
 
     def _get_glue_db_iam_policy(self, database_name: str) -> PolicyStatement:
         return PolicyStatement(
@@ -310,27 +308,9 @@ class DataBrewAthenaStack(BaseStack):
             job_name=marketing_job.name,
         )
 
-        # Athena Drop Stage
-        athena_drop_stage = AthenaSQLStage(
-            self,
-            id="athena-drop-sql",
-            query_string=("DROP TABLE IF EXISTS marketing_data_output ;"),
-            database_name=marketing_database.database_name,
-            output_location=s3.Location(
-                bucket_name=output_bucket.bucket_name,
-                object_key="query-results/",
-            ),
-            additional_role_policy_statements=[
-                self._get_glue_db_iam_policy(
-                    database_name=marketing_database.database_name
-                ),
-                self._get_athena_results_iam_policy(
-                    bucket_name=output_bucket.bucket_name
-                ),
-            ],
-        )
-
-        athena_ddl_sql = f"""CREATE EXTERNAL TABLE `marketing_data_output`
+        athena_sql = [
+            "DROP TABLE IF EXISTS marketing_data_output ;",
+            f"""CREATE EXTERNAL TABLE `marketing_data_output`
                     (`date` string, `new_visitors_seo` int, `new_visitors_cpc` int, 
                     `new_visitors_social_media` int, `return_visitors` int, 
                     `twitter_mentions` int,   `twitter_follower_adds` int, 
@@ -349,34 +329,15 @@ class DataBrewAthenaStack(BaseStack):
                         'org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat' 
                     LOCATION  's3://{output_bucket.bucket_name}/marketing/' 
                     TBLPROPERTIES ('classification'='parquet', 'compressionType'='none', 
-                            'typeOfData'='file'); """
+                            'typeOfData'='file'); """,
+            "MSCK REPAIR TABLE marketing_data_output ;",
+        ]
 
-        # Athena Create SQL Stage
-        athena_create_stage = AthenaSQLStage(
+        # Athena Drop Stage
+        athena_stage = AthenaSQLStage(
             self,
-            id="athena-create-sql",
-            query_string=(athena_ddl_sql),
-            work_group="primary",
-            output_location=s3.Location(
-                bucket_name=output_bucket.bucket_name,
-                object_key="query-results/",
-            ),
-            database_name=marketing_database.database_name,
-            additional_role_policy_statements=[
-                self._get_glue_db_iam_policy(
-                    database_name=marketing_database.database_name
-                ),
-                self._get_athena_results_iam_policy(
-                    bucket_name=output_bucket.bucket_name
-                ),
-            ],
-        )
-
-        # Load Partitions SQL Stage
-        athena_parttion_stage = AthenaSQLStage(
-            self,
-            id="athena-partition-sql",
-            query_string=("MSCK REPAIR TABLE marketing_data_output ;"),
+            id="athena-sql",
+            query_string=athena_sql,
             database_name=marketing_database.database_name,
             output_location=s3.Location(
                 bucket_name=output_bucket.bucket_name,
@@ -404,7 +365,5 @@ class DataBrewAthenaStack(BaseStack):
                     targets=databrew_stage.targets,
                 ),
             )
-            .add_stage(stage=athena_drop_stage)
-            .add_stage(stage=athena_create_stage)
-            .add_stage(stage=athena_parttion_stage)
+            .add_stage(stage=athena_stage)
         )
