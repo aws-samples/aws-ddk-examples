@@ -35,40 +35,34 @@ Feel free to dive into the DDK file, Glue Script, and Lambda code if you want to
 To complete this deployment, you'll need the following in your local environment:
 
 Programmatic access to an AWS Account
-Python (version 3.7 or above) and its package manager, pip (version 9.0.3 or above), are required
+Node and its package manager, npm are required
 
-```
-$ python --version
-$ pip --version
+```shell
+node -v
+npm -v
 ```
 
 The AWS CLI installed and configured
 
-```
-$ aws --version
+```shell
+aws --version
 ```
 
 The AWS CDK CLI (version 2.10 and above) installed, to upgrade use `npm install -g aws-cdk`
 
-```
-$ cdk --version
+```shell
+cdk --version
 ```
 
 ## Initial setup with the DDK CLI
 
 At this time, you should have downloaded the code for this pattern and should be in the top-level directory of this pattern.
 
-Create and activate a virtualenv
-
-```
-$ python -m venv .venv && source .venv/bin/activate
-```
-
-Install the dependencies from requirements.txt
+Install the dependencies from `package.json`
 This is when the AWS DDK Core library is installed
 
-```
-$ pip install -r requirements.txt --no-cache-dir
+```shell
+npm install
 ```
 
 ## CDK Bootstrapping
@@ -77,27 +71,19 @@ In order to deploy DDK apps, you need to bootstrap your environment with the cor
 
 Run the following command to bootstrap the environment for your respective AWS Account and Region:
 
+```shell
+cdk bootstrap --profile [AWS_PROFILE] or cdk bootstrap aws://ACCOUNT-NUMBER-1/REGION-1
 ```
-$ cdk bootstrap --profile [AWS_PROFILE] or cdk bootstrap aws://ACCOUNT-NUMBER-1/REGION-1
-```
-
-## Edit DDK.json
-
-Open the `ddk.json` file in the top-level directory of this repo. 
-
-Edit the configuration file and enter your desired **AWS account number** and **AWS region** for the infrastructure to be deployed in.
-
-Be sure to save your changes to the file before proceeding!
 
 ## Deploy the Data Pipeline
 
 To deploy the pipeline, run the following command:
 
-```
+```shell
 $ cdk deploy --profile [AWS_PROFILE]
 ```
 
-This command should launch a CloudFormation template in the AWS account and region specified in DDK.json, and should take a few minutes to create.
+This command should launch a CloudFormation template in the AWS account and should take a few minutes to create.
 
 Once the CloudFormation stack has been successfully created, your AWS account now has the data pipeline outlined in the architecture section of this readme! 
 
@@ -111,11 +97,11 @@ If the data pipeline is successful, all of the datasets will be added to the "ou
 
 For example, the "sales.json" dataset should end up in "s3://DDK_BUCKET_NAME/output/sales/sale_data.parquet". Also, the dataset  should be added to the Glue Catalog under the "ddk_pattern_database" Glue Database in a table named "sales".
 
-In the command below replace **S3_BUCKET_NAME** with the the name of the S3 bucket created by DDK. (Hint: Your **S3_BUCKET_NAME** should be "ddk-dev-filestandardization-bucket-YourAwsAccountNumber")
+In the command below replace **S3_BUCKET_NAME** with the the name of the S3 bucket created by DDK. (Hint: Your **S3_BUCKET_NAME** should be `ddk-filestandardization-bucket-YourAwsAccountNumber`)
 
 Also, replace **AWS_PROFILE** with your profile name you have configured for your AWS CLI.
 
-```
+```shell
 $ sh utils/upload_files.sh S3_BUCKET_NAME AWS_PROFILE
 ```
 
