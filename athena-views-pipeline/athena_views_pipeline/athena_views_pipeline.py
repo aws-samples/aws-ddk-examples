@@ -27,12 +27,12 @@ class AthenaViewsPipeline(BaseStack):
         self._athena_stage = AthenaSQLStage(
             self,
             id="athena-sql-stage",
-            query_string=JsonPath.format(
+            query_string=[JsonPath.format(
                 'CREATE OR REPLACE VIEW "{}"."{}" AS {}',
                 JsonPath.string_at("$.db"),
                 JsonPath.string_at("$.view"),
                 JsonPath.string_at("$.query"),
-            ),
+            )],
             output_location=Location(
                 bucket_name=bucket.bucket_name,
                 object_key="query_output",

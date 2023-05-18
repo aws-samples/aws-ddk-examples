@@ -73,13 +73,15 @@ class DdkApplicationStack(BaseStack):
         athena_stage = AthenaSQLStage(
             self,
             id="athena-sql",
-            query_string=(
-                "SELECT year, month, day, device, count(user_count) as cnt "
-                f"FROM {database.database_name}.ga_sample "
-                "GROUP BY year, month, day, device "
-                "ORDER BY cnt DESC "
-                "LIMIT 10; "
-            ),
+            query_string=[
+                (
+                    "SELECT year, month, day, device, count(user_count) as cnt "
+                    f"FROM {database.database_name}.ga_sample "
+                    "GROUP BY year, month, day, device "
+                    "ORDER BY cnt DESC "
+                    "LIMIT 10; "
+                )
+            ],
             output_location=Location(
                 bucket_name=bucket.bucket_name, object_key="query-results/"
             ),
