@@ -1,8 +1,8 @@
 DIRNAME=$(pwd)
 DATE=$(date +"%Y-%m-%d")
-PROFILE='default'
-REGION='us-east-1'
-BUCKET_NAME='ENTER_SDLF_BUCKET_NAME'
+BUCKET_NAME="${1}"
+REGION="${2:-us-east-1}"
+PROFILE="${3:-default}"
 DATASET='legislators'
 TEAM='demoteam'
 
