@@ -111,7 +111,7 @@ The following AWS services are required for this utility:
 
 <br />
 
-### Initial setup with the DDK CLI
+### Initial setup with the CLI
 
 <br />
 
@@ -243,7 +243,12 @@ Once the above steps are performed, verify the below and run the deploy command 
 2.  `parameters.json` file is updated if required
 
 ```
+FOR CICD
 $ cdk deploy --profile [AWS_PROFILE_CICD]
+
+FOR NO CICD
+$ cdk deploy --all --profile [AWS_PROFILE_CICD]
+
 ```
 
 The deploy all step deploys an AWS CICD CodePipeline along with its respective AWS CloudFormation Stacks. The last stage of each pipeline delivers the SDLF Data Lake infrastructure respectively in the child (default dev) environment through CDK/CloudFormation.
@@ -287,10 +292,10 @@ In the pipelines directory, these stage blueprints are instantiated and wired to
 
 - If you are using this in a burner account or for demos, you can use the demo data and default `data_lake_parameters` in `ddk.json` to test the data lake functionality.
 
-- Before you execute the below command, make sure to go into copy.sh and provide the necessary details for the variables such as `BUCKET_NAME`, `PROFILE` and `REGION`. Once executed it will put the data in respective s3 bucket and start data lake processing. You can update the file to also copy other sample data, or change the `DATASET` and `TEAM` parameters to test multiple pipelines.
+- Execute the below command with the necessary details for the variables such as `BUCKET_NAME`, `PROFILE` and `REGION`. Once executed it will put the data in respective s3 bucket and start data lake processing. You can update the file to also copy other sample data, or change the `DATASET` and `TEAM` parameters to test multiple pipelines.
 
 ```
-$ sh ./examples/copy.sh
+$ sh ./examples/copy.sh BUCKET_NAME REGION PROFILE
 ```
 
 <br />
@@ -397,11 +402,20 @@ If you want to provide different step machines that what is provided out of the 
 
     - The default stages `sdlf_light_transform.py` and `sdlf_heavy_transform.py` include lambdas, queues and step function definitions for your pipeline written as CDK and DDK Constructs
 
-    -  Ensure the custom stages have the following function (`def get_target()` is the first resource triggered in the stage):
+    -  Ensure the custom stages have the following function (`def target()` `def state_machine()` `def event_pattern()` is the first resource triggered in the stage):
     
     ```
-    def get_targets(self) -> Optional[List[IRuleTarget]]:
-        return [LambdaFunction(self._lambda)]
+    @property
+    def targets(self) -> Optional[List[events.IRuleTarget]]:
+        return [targets.LambdaFunction(self._lambda)]
+
+    @property
+    def state_machine(self):
+        return self._state_machine
+
+    @property
+    def event_pattern(self):
+        return self._event_pattern
     ```
 
 - Add the stages in the `__init__.py` file of your custom pipeline directory.

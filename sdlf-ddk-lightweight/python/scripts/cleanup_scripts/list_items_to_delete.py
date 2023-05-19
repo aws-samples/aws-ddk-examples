@@ -41,7 +41,7 @@ def list_s3_buckets(prefix):
     bucket_list = []
     response = s3_client.list_buckets()
     for bucket in response["Buckets"]:
-        if re.match(f"{prefix}-*", bucket["Name"]) or re.match("ddk-*", bucket["Name"]):
+        if re.match(f"{prefix}-*", bucket["Name"]) or re.match("cdk-*", bucket["Name"]):
             bucket_list.append(bucket["Name"])
     return bucket_list
 
