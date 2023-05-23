@@ -23,6 +23,7 @@ export class CustomDatasetStack extends BaseStack {
   dataset: string;
   resourcePrefix: string;
   stageATransform: string;
+
   constructor(scope: Construct, id: string, props: CustomDatasetStackProps) {
     super(scope, id, props);
     this.datasetConfig = props.datasetConfig;

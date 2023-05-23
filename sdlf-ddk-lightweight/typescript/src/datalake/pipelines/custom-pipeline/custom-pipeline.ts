@@ -11,11 +11,8 @@ import {
 } from 'aws-ddk-core';
 import { Construct } from 'constructs';
 import { FoundationsStack } from '../../foundations';
-import { SDLFLightTransform, SDLFLightTransformConfig } from '../common-stages';
-import {
-  CustomDatasetConfig,
-  CustomDatasetStack
-} from './custom-dataset-stack';
+import { SDLFLightTransform } from '../common-stages';
+import { CustomDatasetStack } from './custom-dataset-stack';
 
 const PIPELINE_TYPE = 'custom';
 
@@ -38,6 +35,13 @@ export interface CustomPipelineProps extends BaseStackProps {
   readonly org: string;
   readonly runtime: lambda.Runtime;
 }
+
+interface CreateCustomPipelineResult {
+  readonly datalakePipeline: DataPipeline;
+  readonly s3EventCaptureStage: S3EventStage;
+  readonly datalakeLightTransform: SDLFLightTransform;
+}
+
 export class CustomPipeline extends BaseStack {
   readonly team: string;
   readonly resourcePrefix: string;
@@ -50,12 +54,14 @@ export class CustomPipeline extends BaseStack {
   readonly runtime: lambda.Runtime;
   readonly datalakeLibraryLayerArn: string;
   readonly datalakeLibraryLayer: lambda.ILayerVersion;
-  datalakePipeline: DataPipeline;
-  s3EventCaptureStage: S3EventStage;
-  datalakeLightTransform: SDLFLightTransform;
+
+  readonly datalakePipeline: DataPipeline;
+  readonly s3EventCaptureStage: S3EventStage;
+  readonly datalakeLightTransform: SDLFLightTransform;
 
   constructor(scope: Construct, id: string, props: CustomPipelineProps) {
     super(scope, id, props);
+
     this.team = props.team;
     this.resourcePrefix = props.resourcePrefix;
     this.pipelineId = `${this.resourcePrefix}-${this.team}-${PIPELINE_TYPE}`;
@@ -76,14 +82,20 @@ export class CustomPipeline extends BaseStack {
       'data-lake-library-layer',
       this.datalakeLibraryLayerArn
     );
-    this.createCustomPipeline();
+
+    ({
+      datalakePipeline: this.datalakePipeline,
+      s3EventCaptureStage: this.s3EventCaptureStage,
+      datalakeLightTransform: this.datalakeLightTransform
+    } = this.createCustomPipeline());
   }
-  protected createCustomPipeline(): void {
+
+  protected createCustomPipeline(): CreateCustomPipelineResult {
     // routing function
     const routingFunction = this.createRoutingLambda();
 
     // S3 Event Capture Stage
-    this.s3EventCaptureStage = new S3EventStage(
+    const s3EventCaptureStage = new S3EventStage(
       this,
       `${this.pipelineId}-s3-event-capture`,
       {
@@ -92,7 +104,7 @@ export class CustomPipeline extends BaseStack {
       }
     );
 
-    this.datalakeLightTransform = new SDLFLightTransform(
+    const datalakeLightTransform = new SDLFLightTransform(
       this,
       `${this.pipelineId}-stage-a`,
       {
@@ -124,13 +136,20 @@ export class CustomPipeline extends BaseStack {
       }
     );
 
-    this.datalakePipeline = new DataPipeline(this, this.pipelineId, {
+    const datalakePipeline = new DataPipeline(this, this.pipelineId, {
       name: `${this.pipelineId}-pipeline`,
       description: `${this.resourcePrefix} data lake pipeline`
     })
       .addStage({ stage: this.s3EventCaptureStage })
       .addStage({ stage: this.datalakeLightTransform, skipRule: true });
+
+    return {
+      datalakeLightTransform,
+      datalakePipeline,
+      s3EventCaptureStage
+    };
   }
+
   protected createRoutingLambda(): lambda.IFunction {
     const routingFunction = new lambda.Function(
       this,

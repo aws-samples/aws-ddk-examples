@@ -9,7 +9,7 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as s3Deployment from 'aws-cdk-lib/aws-s3-deployment';
 import * as cr from 'aws-cdk-lib/custom-resources';
-import { BaseStack} from 'aws-ddk-core';
+import { BaseStack } from 'aws-ddk-core';
 
 import { Construct } from 'constructs';
 
@@ -33,7 +33,7 @@ export class FoundationsStack extends BaseStack {
   readonly datasets: dynamo.Table;
   readonly pipelines: dynamo.Table;
   readonly peh: dynamo.Table;
-  registerProvider: cr.Provider;
+  readonly registerProvider: cr.Provider;
   readonly lakeformationBucketRegistrationRole: iam.Role;
   readonly rawBucket: s3.Bucket;
   readonly rawBucketKey: kms.Key;
@@ -74,7 +74,7 @@ export class FoundationsStack extends BaseStack {
       name: `octagon-PipelineExecutionHistory-${props.environmentId}`,
       partitionKey: { name: 'id', type: dynamo.AttributeType.STRING }
     });
-    this.createRegister(props.runtime);
+    this.registerProvider = this.createRegister(props.runtime);
 
     // creates encrypted buckets and registers them in lake formation
     this.lakeformationBucketRegistrationRole =
@@ -125,29 +125,25 @@ export class FoundationsStack extends BaseStack {
       pointInTimeRecovery: true
     });
   }
-  private createRegister(runtime: lambda.Runtime): void {
-    const registerFunction = new lambda.Function(
-      this,
-      'register-function',
-      {
-        code: lambda.Code.fromAsset(
-          path.join(__dirname, '../src/lambdas/register/')
-        ),
-        handler: 'handler.on_event',
-        memorySize: 256,
-        description:
-          'Registers Datasets, Pipelines and Stages into their respective DynamoDB tables',
-        timeout: cdk.Duration.minutes(15),
-        runtime: runtime,
-        environment: {
-          OCTAGON_DATASET_TABLE_NAME: this.datasets.tableName,
-          OCTAGON_PIPELINE_TABLE_NAME: this.pipelines.tableName
-        }
+  private createRegister(runtime: lambda.Runtime): cr.Provider {
+    const registerFunction = new lambda.Function(this, 'register-function', {
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../src/lambdas/register/')
+      ),
+      handler: 'handler.on_event',
+      memorySize: 256,
+      description:
+        'Registers Datasets, Pipelines and Stages into their respective DynamoDB tables',
+      timeout: cdk.Duration.minutes(15),
+      runtime: runtime,
+      environment: {
+        OCTAGON_DATASET_TABLE_NAME: this.datasets.tableName,
+        OCTAGON_PIPELINE_TABLE_NAME: this.pipelines.tableName
       }
-    );
+    });
     this.datasets.grantReadWriteData(registerFunction);
     this.pipelines.grantReadWriteData(registerFunction);
-    this.registerProvider = new cr.Provider(this, 'register-provider', {
+    return new cr.Provider(this, 'register-provider', {
       onEventHandler: registerFunction
     });
   }

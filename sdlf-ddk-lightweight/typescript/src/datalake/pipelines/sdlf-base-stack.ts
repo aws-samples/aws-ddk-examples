@@ -89,7 +89,7 @@ export class SDLFBaseStack extends BaseStack {
       } else {
         pipeline = pipelines[pipelineName];
       }
-                
+
       // Register dataset to pipeline with concrete implementations
       const datasetName = `${team}-${dataset}`;
       if (!datasetNames.includes(datasetName)) {
