@@ -10,10 +10,7 @@ import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as tasks from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import * as cr from 'aws-cdk-lib/custom-resources';
-import {
-  StateMachineStage,
-  StateMachineStageProps
-} from 'aws-ddk-core';
+import { StateMachineStage, StateMachineStageProps } from 'aws-ddk-core';
 import { Construct } from 'constructs';
 
 export interface SDLFHeavyTransformConfig {
@@ -37,9 +34,11 @@ export interface SDLFHeavyTransformProps extends StateMachineStageProps {
 
 export class SDLFHeavyTransform extends StateMachineStage {
   readonly targets?: events.IRuleTarget[];
-  readonly stateMachine: sfn.StateMachine;
   readonly eventPattern?: events.EventPattern;
+  readonly stateMachine: sfn.StateMachine;
+
   readonly config: SDLFHeavyTransformConfig;
+
   readonly environmentId: string;
   readonly prefix: string;
   readonly team: string;
@@ -75,7 +74,7 @@ export class SDLFHeavyTransform extends StateMachineStage {
     const checkJobTask = this.createLambdaTask('check-job', '$.body.job');
 
     // build state machine
-    this.buildStateMachine(
+    this.stateMachine = this.buildStateMachine(
       processTask,
       postupdateTask,
       errorTask,
@@ -252,7 +251,7 @@ export class SDLFHeavyTransform extends StateMachineStage {
     postupdateTask: tasks.LambdaInvoke,
     errorTask: tasks.LambdaInvoke,
     checkJobTask: tasks.LambdaInvoke
-  ): void {
+  ): sfn.StateMachine {
     // Success/Failure/Wait States
     const successState = new sfn.Succeed(
       this,
@@ -338,5 +337,7 @@ export class SDLFHeavyTransform extends StateMachineStage {
         stringValue: createStateMachine.stateMachine.stateMachineArn
       }
     );
+
+    return createStateMachine.stateMachine;
   }
 }

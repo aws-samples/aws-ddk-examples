@@ -1,11 +1,7 @@
 import * as path from 'path';
 import * as cdk from 'aws-cdk-lib';
-import * as events from 'aws-cdk-lib/aws-events';
-import * as eventsTargets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as cr from 'aws-cdk-lib/custom-resources';
-import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import {
   BaseStack,
@@ -15,12 +11,7 @@ import {
 } from 'aws-ddk-core';
 import { Construct } from 'constructs';
 import { FoundationsStack } from '../../foundations';
-import {
-  SDLFHeavyTransform,
-  SDLFHeavyTransformConfig,
-  SDLFLightTransform,
-  SDLFLightTransformConfig
-} from '../common-stages';
+import { SDLFHeavyTransform, SDLFLightTransform } from '../common-stages';
 import {
   StandardDatasetConfig,
   StandardDatasetStack
@@ -47,6 +38,15 @@ export interface StandardPipelineProps extends BaseStackProps {
   readonly org: string;
   readonly runtime: lambda.Runtime;
 }
+
+interface CreateSdlfPipelineResult {
+  readonly s3EventCaptureStage: S3EventStage;
+  readonly datalakeLightTransform: SDLFLightTransform;
+  readonly datalakeHeavyTransform: SDLFHeavyTransform;
+  readonly routingB: lambda.IFunction;
+  readonly datalakePipeline: DataPipeline;
+}
+
 export class StandardPipeline extends BaseStack {
   readonly resourcePrefix: string;
   readonly team: string;
@@ -59,10 +59,12 @@ export class StandardPipeline extends BaseStack {
   readonly org: string;
   readonly runtime: lambda.Runtime;
   readonly environmentId: string;
-  s3EventCaptureStage: S3EventStage;
-  datalakeLightTransform: SDLFLightTransform;
-  routingB: lambda.IFunction;
-  datalakePipeline: DataPipeline;
+
+  readonly s3EventCaptureStage: S3EventStage;
+  readonly datalakeLightTransform: SDLFLightTransform;
+  readonly datalakeHeavyTransform: SDLFHeavyTransform;
+  readonly routingB: lambda.IFunction;
+  readonly datalakePipeline: DataPipeline;
 
   constructor(scope: Construct, id: string, props: StandardPipelineProps) {
     super(scope, id, props);
@@ -85,14 +87,22 @@ export class StandardPipeline extends BaseStack {
       'data-lake-library-layer',
       this.datalakeLibraryLayerArn
     );
-    this.createSdlfPipeline();
+
+    ({
+      s3EventCaptureStage: this.s3EventCaptureStage,
+      routingB: this.routingB,
+      datalakeLightTransform: this.datalakeLightTransform,
+      datalakeHeavyTransform: this.datalakeHeavyTransform,
+      datalakePipeline: this.datalakePipeline
+    } = this.createSdlfPipeline());
   }
-  protected createSdlfPipeline(): SDLFHeavyTransform {
+
+  protected createSdlfPipeline(): CreateSdlfPipelineResult {
     // routing function
     const routingFunction = this.createRoutingLambda();
 
     // S3 Event Capture Stage
-    this.s3EventCaptureStage = new S3EventStage(
+    const s3EventCaptureStage = new S3EventStage(
       this,
       `${this.pipelineId}-s3-event-capture`,
       {
@@ -101,7 +111,7 @@ export class StandardPipeline extends BaseStack {
       }
     );
 
-    this.datalakeLightTransform = new SDLFLightTransform(
+    const datalakeLightTransform = new SDLFLightTransform(
       this,
       `${this.pipelineId}-stage-a`,
       {
@@ -161,17 +171,25 @@ export class StandardPipeline extends BaseStack {
         description: `${this.resourcePrefix} data lake heavy transform`
       }
     );
-    this.routingB = datalakeHeavyTransform.routingLambda;
+    const routingB = datalakeHeavyTransform.routingLambda;
 
-    this.datalakePipeline = new DataPipeline(this, this.pipelineId, {
+    const datalakePipeline = new DataPipeline(this, this.pipelineId, {
       name: `${this.resourcePrefix}-DataPipeline-${this.team}-${PIPELINE_TYPE}-${this.environmentId}`,
       description: `${this.resourcePrefix} data lake pipeline`
     })
       .addStage({ stage: this.s3EventCaptureStage })
       .addStage({ stage: this.datalakeLightTransform, skipRule: true })
       .addStage({ stage: datalakeHeavyTransform, skipRule: true });
-    return datalakeHeavyTransform;
+
+    return {
+      routingB,
+      s3EventCaptureStage,
+      datalakeHeavyTransform,
+      datalakeLightTransform,
+      datalakePipeline
+    };
   }
+
   protected createRoutingLambda(): lambda.IFunction {
     // Lambda
     const routingFunction = new lambda.Function(
@@ -258,6 +276,7 @@ export class StandardPipeline extends BaseStack {
     });
     return routingFunction;
   }
+
   public registerDataset(dataset: string, config: StandardDatasetConfig): void {
     // Create dataset stack
     const stageATransform = config.stageATransform ?? 'sdlf_light_transform';

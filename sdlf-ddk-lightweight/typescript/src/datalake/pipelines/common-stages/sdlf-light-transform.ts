@@ -54,6 +54,7 @@ export class SDLFLightTransform extends StateMachineStage {
   readonly targets?: events.IRuleTarget[];
   readonly stateMachine: sfn.StateMachine;
   readonly eventPattern?: events.EventPattern;
+
   readonly config: SDLFLightTransformConfig;
   readonly environmentId: string;
   readonly prefix: string;
@@ -92,17 +93,18 @@ export class SDLFLightTransform extends StateMachineStage {
     this.sqsKey = sqsKey;
 
     this.lambdaRole = this.createLambdaRole();
-    const routingLambda = this.createLambdaFunction('routing', { timeout: 1 });
+    this.routingLambda = this.createLambdaFunction('routing', { timeout: 1 });
     new SqsToLambdaStage(
       this,
       `${this.prefix}-routing-${this.team}-${this.pipeline}-sqs-lambda`,
       {
-        lambdaFunction: routingLambda,
+        lambdaFunction: this.routingLambda,
         sqsQueue: this.routingQueue,
         messageGroupId: `${this.prefix}-routing-${this.team}-${this.pipeline}-group`
       }
     );
-    this.createLambdaFunction('redrive', {});
+
+    this.redriveLambda = this.createLambdaFunction('redrive', {});
     const preupdateTask = this.createLambdaTask('preupdate', {});
     const processTask = this.createLambdaTask('process', {
       resultPath: '$.Payload.body.processedKeys',
@@ -112,7 +114,8 @@ export class SDLFLightTransform extends StateMachineStage {
       resultPath: '$.statusCode'
     });
     const errorTask = this.createLambdaTask('error', {});
-    this.buildStateMachine(
+
+    this.stateMachine = this.buildStateMachine(
       preupdateTask,
       processTask,
       postupdateTask,
@@ -333,7 +336,7 @@ export class SDLFLightTransform extends StateMachineStage {
   protected createLambdaFunction(
     stepName: string,
     props: createLambdaFunctionProps
-  ): lambda.IFunction {
+  ): lambda.Function {
     return new lambda.Function(
       this,
       `${this.prefix}-${this.team}-${this.pipeline}-${stepName}`,
@@ -381,7 +384,7 @@ export class SDLFLightTransform extends StateMachineStage {
     processTask: tasks.LambdaInvoke,
     postupdateTask: tasks.LambdaInvoke,
     errorTask: tasks.LambdaInvoke
-  ): void {
+  ): sfn.StateMachine {
     // Success/Failure States
     const successState = new sfn.Succeed(
       this,
@@ -429,5 +432,7 @@ export class SDLFLightTransform extends StateMachineStage {
         stringValue: createStateMachine.stateMachine.stateMachineArn
       }
     );
+
+    return createStateMachine.stateMachine;
   }
 }
