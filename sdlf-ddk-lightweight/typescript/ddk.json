@@ -1,13 +1,13 @@
 {
   "environments": {
     "cicd": {
-      "account": "273442547301",
+      "account": "111111111111",
       "region": "us-east-1",
       "repository": "sdlf-ddk-example",
       "cicd_enabled": true
     },
     "dev": {
-      "account": "273442547301",
+      "account": "11111111",
       "region": "us-east-1",
       "name": "Development",
       "resource_prefix": "sdlf",
