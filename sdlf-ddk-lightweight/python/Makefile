@@ -10,8 +10,8 @@ CICD_ENABLED=${shell jq .environments.cicd.cicd_enabled ddk.json}
 .PHONY: empty_buckets delete_sdlf delete_sdlf_no_cicd delete_bootstrap delete_bootstrap_no_cicd delete_repositories delete_all_items cdk_synth_to_yaml
 
 
-delete_all: empty_buckets delete_sdlf delete_bootstrap delete_repositories delete_all_items
-delete_all_no_cicd: empty_buckets delete_sdlf_no_cicd delete_bootstrap_no_cicd delete_all_items
+delete_all: empty_buckets delete_sdlf delete_repositories delete_all_items
+delete_all_no_cicd: empty_buckets delete_sdlf_no_cicd delete_all_items
 
 
 help:
