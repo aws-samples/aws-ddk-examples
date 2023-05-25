@@ -38,7 +38,6 @@ class DataBrewAthenaStack(BaseStack):
         )
 
         marketing_job = self._create_databrew_environment(input_bucket, output_bucket)
-
         marketing_job.node.add_dependency(marketing_bucket_deployment)
         marketing_job.node.add_dependency(output_bucket)
 

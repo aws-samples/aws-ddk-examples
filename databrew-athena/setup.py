@@ -6,7 +6,7 @@ with open("README.md") as fp:
 
 setuptools.setup(
     name="databrew-athena",
-    version="1.0.0b0",
+    version="1.0.0",
     description="An empty DDK Python app",
     long_description=long_description,
     long_description_content_type="text/markdown",
