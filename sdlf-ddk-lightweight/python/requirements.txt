@@ -1,4 +1,4 @@
-aws_ddk_core==1.0.0rc0
+aws_ddk_core==1.0.0
 boto3==1.24.11
 aws-cdk-lib==2.71.0
 aws-cdk.aws-glue-alpha==2.71.0a0
