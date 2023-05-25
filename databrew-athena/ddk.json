@@ -1,8 +1,8 @@
 {
-    "cdk_version": "2.54.0",
     "environments": {
         "dev": {
-
+            "account": "222222222222",
+            "region": "us-east-1"
         }
     }
 }

@@ -4,8 +4,7 @@
             "account": "222222222222",
             "region": "us-east-1",
             "resources": {
-                "bucket": {"versioned": false, "removal_policy": "destroy"},
-                "lambda-stage-function": {"memory_size": 512, "timeout":  60}
+                "AWS::Lambda::Function": {"MemorySize": 512, "Timeout":  60}
             }
         }
     }

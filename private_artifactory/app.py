@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import aws_cdk as cdk
-from aws_ddk_core.cicd import CICDPipelineStack, get_codeartifact_publish_action
-from aws_ddk_core.config import Config
+from aws_ddk_core import CICDActions, CICDPipelineStack, Configurator
+
 from ddk_lib.artifactory_stack import ArtifactoryStack
 
 app = cdk.App()
@@ -10,7 +10,9 @@ app = cdk.App()
 # Artifactory parameters
 ENVIRONMENT_ID = "dev"
 DOMAIN_NAME = "ddk-lib-domain"
-env_config = Config().get_env_config(environment_id=ENVIRONMENT_ID)
+env_config = Configurator.get_env_config(
+    config_path="./ddk.json", environment_id=ENVIRONMENT_ID
+)._values
 DOMAIN_OWNER = env_config["account"]
 REPOSITORY_NAME = "ddk-lib-repository"
 PIPELINE_NAME = "ddk-lib-pipeline"
@@ -19,7 +21,7 @@ PIPELINE_NAME = "ddk-lib-pipeline"
 artifactory_stack: ArtifactoryStack = ArtifactoryStack(
     app,
     id="DdkArtifactory",
-    environment_id="dev",
+    environment_id=ENVIRONMENT_ID,
     domain_name=DOMAIN_NAME,
     domain_owner=DOMAIN_OWNER,
     repository_name=REPOSITORY_NAME,
@@ -35,11 +37,11 @@ pipeline: CICDPipelineStack = (
     )
     .add_source_action(repository_name=REPOSITORY_NAME)
     .add_synth_action()
-    .build()
+    .build_pipeline()
     .add_custom_stage(
         stage_name="PublishToCodeArtifact",
         steps=[
-            get_codeartifact_publish_action(
+            CICDActions.get_code_artifact_publish_action(
                 partition="aws",
                 region=env_config["region"],
                 account=env_config["account"],

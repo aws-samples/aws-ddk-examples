@@ -1,0 +1,13 @@
+{
+    "dev": [
+        {
+            "dataset": "legislators",
+            "pipeline": "standard",
+            "team": "demoteam",
+            "config": {
+                "stage_a_transform": "sdlf_light_transform",
+                "stage_b_transform": "sdlf_heavy_transform"
+            }
+        }
+    ]
+}

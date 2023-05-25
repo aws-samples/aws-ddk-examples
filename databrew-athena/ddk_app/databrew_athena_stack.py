@@ -2,10 +2,10 @@ from typing import Any
 
 from aws_cdk import CustomResource, Duration
 from aws_cdk import aws_databrew as databrew
+from aws_cdk import aws_events as events
 from aws_cdk import aws_lambda as _lambda
+from aws_cdk import aws_s3 as s3
 from aws_cdk import custom_resources as cr
-from aws_cdk.aws_databrew import CfnDataset, CfnRecipe
-from aws_cdk.aws_events import Rule, Schedule
 from aws_cdk.aws_glue_alpha import Database
 from aws_cdk.aws_iam import (
     Effect,
@@ -17,10 +17,7 @@ from aws_cdk.aws_iam import (
 )
 from aws_cdk.aws_s3 import Bucket, BucketAccessControl
 from aws_cdk.aws_s3_deployment import BucketDeployment, Source
-from aws_ddk_core.base import BaseStack
-from aws_ddk_core.pipelines import DataPipeline
-from aws_ddk_core.resources import DataBrewFactory, LambdaFactory, S3Factory
-from aws_ddk_core.stages import AthenaSQLStage, DataBrewTransformStage
+from aws_ddk_core import AthenaSQLStage, BaseStack, DataBrewTransformStage, DataPipeline
 from constructs import Construct
 
 
@@ -28,31 +25,25 @@ class DataBrewAthenaStack(BaseStack):
     def __init__(
         self, scope: Construct, id: str, environment_id: str, **kwargs: Any
     ) -> None:
-        super().__init__(scope, id, environment_id, **kwargs)
+        super().__init__(scope, id, environment_id=environment_id, **kwargs)
 
         input_bucket = self._create_s3_bucket(
-            environment_id=environment_id, bucket_id="databrew-pipeline-input-bucket"
+            bucket_id="databrew-pipeline-input-bucket"
         )
 
         marketing_bucket_deployment = self._upload_data_to_buckets(input_bucket)
 
         output_bucket = self._create_s3_bucket(
-            environment_id=environment_id, bucket_id="databrew-pipeline-output-bucket"
+            bucket_id="databrew-pipeline-output-bucket"
         )
 
-        marketing_job = self._create_databrew_environment(
-            input_bucket, output_bucket, environment_id
-        )
-
+        marketing_job = self._create_databrew_environment(input_bucket, output_bucket)
         marketing_job.node.add_dependency(marketing_bucket_deployment)
         marketing_job.node.add_dependency(output_bucket)
 
-
         marketing_database = self._create_database(database_name="marketing_data")
 
-        marketing_pipeline = self._create_pipeline(
-            marketing_job, output_bucket, marketing_database, environment_id
-        )
+        self._create_pipeline(marketing_job, output_bucket, marketing_database)
 
     def _get_glue_db_iam_policy(self, database_name: str) -> PolicyStatement:
         return PolicyStatement(
@@ -91,11 +82,10 @@ class DataBrewAthenaStack(BaseStack):
             database_name=database_name,
         )
 
-    def _create_s3_bucket(self, environment_id: str, bucket_id: str) -> Bucket:
-        s3_bucket = S3Factory.bucket(
+    def _create_s3_bucket(self, bucket_id: str) -> Bucket:
+        s3_bucket = s3.Bucket(
             self,
             id=bucket_id,
-            environment_id=environment_id,
             access_control=BucketAccessControl.BUCKET_OWNER_FULL_CONTROL,
             event_bridge_enabled=True,
         )
@@ -138,7 +128,7 @@ class DataBrewAthenaStack(BaseStack):
         return marketing_file_deployment
 
     def _create_databrew_environment(
-        self, input_bucket: Bucket, output_bucket: Bucket, environment_id: str
+        self, input_bucket: Bucket, output_bucket: Bucket
     ) -> databrew.CfnJob:
         input_bucket_arn: str = input_bucket.bucket_arn
         output_bucket_arn: str = output_bucket.bucket_arn
@@ -146,15 +136,15 @@ class DataBrewAthenaStack(BaseStack):
         partition_column_names = ["year", "month", "day"]
 
         # defining the Dataset properties for the Databrew Job
-        marketing_dataset_prop = CfnDataset.InputProperty(
-            s3_input_definition=CfnDataset.S3LocationProperty(
+        marketing_dataset_prop = databrew.CfnDataset.InputProperty(
+            s3_input_definition=databrew.CfnDataset.S3LocationProperty(
                 bucket=input_bucket.bucket_name,
                 key="marketing/marketing_data.csv",
             )
         )
 
         # creating the GlueDatabrew marketing input dataset
-        marketing_dataset = CfnDataset(
+        marketing_dataset = databrew.CfnDataset(
             self,
             "marketing-dataset",
             input=marketing_dataset_prop,
@@ -164,22 +154,22 @@ class DataBrewAthenaStack(BaseStack):
 
         # defining the set of transformations withiin the Glue databrew job
         databrew_actions = [
-            CfnRecipe.RecipeStepProperty(
-                action=CfnRecipe.ActionProperty(
+            databrew.CfnRecipe.RecipeStepProperty(
+                action=databrew.CfnRecipe.ActionProperty(
                     operation="YEAR",
                     parameters={"sourceColumn": "Date", "targetColumn": "year"},
                 ),
                 condition_expressions=None,
             ),
-            CfnRecipe.RecipeStepProperty(
-                action=CfnRecipe.ActionProperty(
+            databrew.CfnRecipe.RecipeStepProperty(
+                action=databrew.CfnRecipe.ActionProperty(
                     operation="MONTH",
                     parameters={"sourceColumn": "Date", "targetColumn": "month"},
                 ),
                 condition_expressions=None,
             ),
-            CfnRecipe.RecipeStepProperty(
-                action=CfnRecipe.ActionProperty(
+            databrew.CfnRecipe.RecipeStepProperty(
+                action=databrew.CfnRecipe.ActionProperty(
                     operation="DAY",
                     parameters={"sourceColumn": "Date", "targetColumn": "day"},
                 ),
@@ -188,7 +178,7 @@ class DataBrewAthenaStack(BaseStack):
         ]
 
         # creating the GlueDatabrew Recipe
-        databrew_job_recipe: CfnRecipe = CfnRecipe(
+        databrew_job_recipe: databrew.CfnRecipe = databrew.CfnRecipe(
             self,
             "databrew-recipe",
             name="databrew-job-recipe",
@@ -196,12 +186,12 @@ class DataBrewAthenaStack(BaseStack):
         )
 
         # creating the lambda custom resource for publishing recipe
-        recipe_publisher_function: _lambda.IFunction = LambdaFactory.function(
+        recipe_publisher_function: _lambda.IFunction = _lambda.Function(
             self,
             "recipe-publisher-function",
-            environment_id=environment_id,
             code=_lambda.Code.from_asset("ddk_app/lambda_handlers"),
             handler="handler.handler",
+            runtime=_lambda.Runtime.PYTHON_3_9,
         )
 
         if recipe_publisher_function.role:
@@ -287,11 +277,10 @@ class DataBrewAthenaStack(BaseStack):
         )
 
         # creating the Databrew job using the DataBrewFactory
-        marketing_job = DataBrewFactory.job(
+        marketing_job = databrew.CfnJob(
             self,
             "marketing-job",
             name="marketing-job",
-            environment_id=environment_id,
             type="RECIPE",
             role_arn=databrew_job_role.role_arn,
             dataset_name=marketing_dataset.name,
@@ -310,36 +299,17 @@ class DataBrewAthenaStack(BaseStack):
         marketing_job: databrew.CfnJob,
         output_bucket: Bucket,
         marketing_database: Database,
-        environment_id: str,
     ):
         # Creating DataBrew Stage
         databrew_stage = DataBrewTransformStage(
             self,
             id="databrew-stage",
-            environment_id=environment_id,
             job_name=marketing_job.name,
         )
 
-        # Athena Drop Stage
-        athena_drop_stage = AthenaSQLStage(
-            self,
-            id="athena-drop-sql",
-            environment_id=environment_id,
-            query_string=("DROP TABLE IF EXISTS marketing_data_output ;"),
-            database_name=marketing_database.database_name,
-            output_bucket_name=output_bucket.bucket_name,
-            output_object_key="query-results/",
-            additional_role_policy_statements=[
-                self._get_glue_db_iam_policy(
-                    database_name=marketing_database.database_name
-                ),
-                self._get_athena_results_iam_policy(
-                    bucket_name=output_bucket.bucket_name
-                ),
-            ],
-        )
-
-        athena_ddl_sql = f"""CREATE EXTERNAL TABLE `marketing_data_output`
+        athena_sql = [
+            "DROP TABLE IF EXISTS marketing_data_output ;",
+            f"""CREATE EXTERNAL TABLE `marketing_data_output`
                     (`date` string, `new_visitors_seo` int, `new_visitors_cpc` int, 
                     `new_visitors_social_media` int, `return_visitors` int, 
                     `twitter_mentions` int,   `twitter_follower_adds` int, 
@@ -358,37 +328,20 @@ class DataBrewAthenaStack(BaseStack):
                         'org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat' 
                     LOCATION  's3://{output_bucket.bucket_name}/marketing/' 
                     TBLPROPERTIES ('classification'='parquet', 'compressionType'='none', 
-                            'typeOfData'='file'); """
+                            'typeOfData'='file'); """,
+            "MSCK REPAIR TABLE marketing_data_output ;",
+        ]
 
-        # Athena Create SQL Stage
-        athena_create_stage = AthenaSQLStage(
+        # Athena Drop Stage
+        athena_stage = AthenaSQLStage(
             self,
-            id="athena-create-sql",
-            environment_id=environment_id,
-            query_string=(athena_ddl_sql),
-            workgroup="primary",
-            output_bucket_name=output_bucket.bucket_name,
-            output_object_key="query-results/",
+            id="athena-sql",
+            query_string=athena_sql,
             database_name=marketing_database.database_name,
-            additional_role_policy_statements=[
-                self._get_glue_db_iam_policy(
-                    database_name=marketing_database.database_name
-                ),
-                self._get_athena_results_iam_policy(
-                    bucket_name=output_bucket.bucket_name
-                ),
-            ],
-        )
-
-        # Load Partitions SQL Stage
-        athena_parttion_stage = AthenaSQLStage(
-            self,
-            id="athena-partition-sql",
-            environment_id=environment_id,
-            query_string=("MSCK REPAIR TABLE marketing_data_output ;"),
-            database_name=marketing_database.database_name,
-            output_bucket_name=output_bucket.bucket_name,
-            output_object_key="query-results/",
+            output_location=s3.Location(
+                bucket_name=output_bucket.bucket_name,
+                object_key="query-results/",
+            ),
             additional_role_policy_statements=[
                 self._get_glue_db_iam_policy(
                     database_name=marketing_database.database_name
@@ -403,15 +356,13 @@ class DataBrewAthenaStack(BaseStack):
         (
             DataPipeline(self, id="marketing-data-pipeline")
             .add_stage(
-                databrew_stage,
-                override_rule=Rule(
+                stage=databrew_stage,
+                override_rule=events.Rule(
                     self,
                     "schedule-rule",
-                    schedule=Schedule.rate(Duration.hours(1)),
-                    targets=databrew_stage.get_targets(),
+                    schedule=events.Schedule.rate(Duration.hours(1)),
+                    targets=databrew_stage.targets,
                 ),
             )
-            .add_stage(athena_drop_stage)
-            .add_stage(athena_create_stage)
-            .add_stage(athena_parttion_stage)
+            .add_stage(stage=athena_stage)
         )

@@ -2,10 +2,7 @@
     "environments": {
         "dev": {
             "account": "222222222222",
-            "region": "us-east-1",
-            "resources": {
-                "bucket": {"versioned": false, "removal_policy": "destroy"}
-            }
+            "region": "us-east-1"
         }
     }
 }

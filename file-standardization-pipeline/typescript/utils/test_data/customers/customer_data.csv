@@ -1,0 +1,4 @@
+customer_id,purchases,loyalty_member,most_recent_purchase_date
+100,3,True,10/01/2022
+101,8,True,10/05/2022
+102,1,False,03/22/2019

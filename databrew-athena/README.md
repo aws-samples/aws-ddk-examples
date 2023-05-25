@@ -35,7 +35,7 @@ source .venv/bin/activate && pip install -r requirements.txt
 If your AWS account hasn't been used to deploy DDK apps before, then you must bootstrap your environment first:
 
 ```console
-ddk bootstrap
+cdk bootstrap --profile or cdk bootstrap aws://ACCOUNT-NUMBER-1/REGION-1
 ```
 
 Open the `ddk_app/ddk_app_stack.py` file and update relevant values. Note that by default the pipeline is scheduled to ingest data every `1 hour`.
@@ -43,7 +43,7 @@ Open the `ddk_app/ddk_app_stack.py` file and update relevant values. Note that b
 You can then deploy your DDK app:
 
 ```console
-ddk deploy
+cdk deploy --profile [AWS_PROFILE]
 ```
 
 

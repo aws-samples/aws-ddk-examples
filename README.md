@@ -17,8 +17,9 @@ It is assumed that you are already somewhat familiar with the AWS DDK. If not, w
 
 If you would like to start your journey by looking at an example, we recommend you to start with [Kinesis to S3 Data Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/basic-data-pipeline) example from the list below.
 
-> **Prerelease Versions of DDK (1.0.0)**
-> [See here](https://github.com/aws-samples/aws-ddk-examples/tree/release-1.0.0) for examples using the `1.0.0beta` version of the library.
+> **Earlier Versions of DDK**
+> [See here](https://github.com/aws-samples/aws-ddk-examples/tree/0.x.x#readme) for examples using the library before the `1.0.0` major version release.
+
 
 ## Examples <a name="Examples"></a>
 | Examples                                                                                                                                    |
@@ -27,6 +28,7 @@ If you would like to start your journey by looking at an example, we recommend y
 | [Google Analytics Appflow Data Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/appflow_athena)                          |
 | [Athena Query Execution Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/athena-query-execution-pipeline)                |
 | [Athena Views Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/athena-views-pipeline)                                    |
+| [DataBrew Athena Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/databrew-athena)                                       |
 | [Private Artifactory](https://github.com/aws-samples/aws-ddk-examples/tree/main/private_artifactory)                                        |
 | [Cross-Account / Cross-Region Data Pipelines](https://github.com/aws-samples/aws-ddk-examples/tree/main/cross-account-region-data-pipeline) |
 | [Data Validation & Cataloging Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/data-validation-cataloging-pipeline)      |

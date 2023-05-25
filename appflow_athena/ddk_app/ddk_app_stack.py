@@ -1,18 +1,19 @@
 from typing import Any
 
+import aws_cdk as cdk
 from aws_cdk import Duration
 from aws_cdk.aws_appflow import CfnFlow
 from aws_cdk.aws_events import EventPattern, Rule, Schedule
 from aws_cdk.aws_glue_alpha import Database
 from aws_cdk.aws_iam import Effect, PolicyStatement, ServicePrincipal
-from aws_cdk.aws_lambda import Code, LayerVersion
-from aws_cdk.aws_s3 import Bucket, BucketAccessControl
-from aws_ddk_core.base import BaseStack
-from aws_ddk_core.pipelines import DataPipeline
-from aws_ddk_core.resources import S3Factory
-from aws_ddk_core.stages import (
+from aws_cdk.aws_lambda import Code, LayerVersion, Runtime
+from aws_cdk.aws_s3 import Bucket, BucketAccessControl, Location
+from aws_ddk_core import (
     AppFlowIngestionStage,
     AthenaSQLStage,
+    BaseStack,
+    Configurator,
+    DataPipeline,
     SqsToLambdaStage,
 )
 from constructs import Construct
@@ -22,10 +23,12 @@ class DdkApplicationStack(BaseStack):
     def __init__(
         self, scope: Construct, id: str, environment_id: str, **kwargs: Any
     ) -> None:
-        super().__init__(scope, id, environment_id, **kwargs)
+        super().__init__(scope, id, environment_id=environment_id, **kwargs)
+
+        Configurator(self, "./ddk.json", environment_id)
 
         # Create S3 bucket
-        bucket = self._create_s3_bucket(environment_id=environment_id)
+        bucket = self._create_s3_bucket()
 
         # Create Database
         database = self._create_database(database_name="appflow_data")
@@ -43,22 +46,23 @@ class DdkApplicationStack(BaseStack):
         appflow_stage = AppFlowIngestionStage(
             self,
             id="appflow-stage",
-            environment_id=environment_id,
             flow_name=flow.flow_name,
         )
         sqs_lambda_stage = SqsToLambdaStage(
             self,
             id="lambda-stage",
-            environment_id=environment_id,
-            code=Code.from_asset("./ddk_app/lambda_handlers"),
-            handler="handler.lambda_handler",
-            layers=[
-                LayerVersion.from_layer_version_arn(
-                    self,
-                    id="layer",
-                    layer_version_arn=f"arn:aws:lambda:{self.region}:336392948345:layer:AWSDataWrangler-Python39:1",
-                )
-            ],
+            lambda_function_props={
+                "code": Code.from_asset("./ddk_app/lambda_handlers"),
+                "handler": "handler.lambda_handler",
+                "layers": [
+                    LayerVersion.from_layer_version_arn(
+                        self,
+                        id="layer",
+                        layer_version_arn=f"arn:aws:lambda:{self.region}:336392948345:layer:AWSDataWrangler-Python39:1",
+                    )
+                ],
+                "runtime": Runtime.PYTHON_3_9,
+            },
         )
         # Grant lambda function S3 read & write permissions
         bucket.grant_read_write(sqs_lambda_stage.function)
@@ -69,16 +73,18 @@ class DdkApplicationStack(BaseStack):
         athena_stage = AthenaSQLStage(
             self,
             id="athena-sql",
-            environment_id=environment_id,
-            query_string=(
-                "SELECT year, month, day, device, count(user_count) as cnt "
-                f"FROM {database.database_name}.ga_sample "
-                "GROUP BY year, month, day, device "
-                "ORDER BY cnt DESC "
-                "LIMIT 10; "
+            query_string=[
+                (
+                    "SELECT year, month, day, device, count(user_count) as cnt "
+                    f"FROM {database.database_name}.ga_sample "
+                    "GROUP BY year, month, day, device "
+                    "ORDER BY cnt DESC "
+                    "LIMIT 10; "
+                )
+            ],
+            output_location=Location(
+                bucket_name=bucket.bucket_name, object_key="query-results/"
             ),
-            output_bucket_name=bucket.bucket_name,
-            output_object_key="query-results/",
             additional_role_policy_statements=[
                 self._get_glue_db_iam_policy(database_name=database.database_name)
             ],
@@ -88,16 +94,16 @@ class DdkApplicationStack(BaseStack):
         (
             DataPipeline(self, id="ingestion-pipeline")
             .add_stage(
-                appflow_stage,
+                stage=appflow_stage,
                 override_rule=Rule(
                     self,
                     "schedule-rule",
                     schedule=Schedule.rate(Duration.hours(1)),
-                    targets=appflow_stage.get_targets(),
+                    targets=appflow_stage.targets,
                 ),
             )
             .add_stage(
-                sqs_lambda_stage,
+                stage=sqs_lambda_stage,
                 # By default, AppFlowIngestionStage stage emits an event after the flow run finishes successfully
                 # Override rule below changes that behavior to call the the stage when data lands in the bucket instead
                 override_rule=Rule(
@@ -111,19 +117,20 @@ class DdkApplicationStack(BaseStack):
                         },
                         detail_type=["Object Created"],
                     ),
-                    targets=sqs_lambda_stage.get_targets(),
+                    targets=sqs_lambda_stage.targets,
                 ),
             )
-            .add_stage(athena_stage)
+            .add_stage(stage=athena_stage)
         )
 
-    def _create_s3_bucket(self, environment_id: str) -> Bucket:
-        bucket = S3Factory.bucket(
+    def _create_s3_bucket(self) -> Bucket:
+        bucket = Bucket(
             self,
             id="bucket",
-            environment_id=environment_id,
             access_control=BucketAccessControl.BUCKET_OWNER_FULL_CONTROL,
             event_bridge_enabled=True,
+            versioned=True,
+            removal_policy=cdk.RemovalPolicy.DESTROY,
         )
         bucket.add_to_resource_policy(
             PolicyStatement(

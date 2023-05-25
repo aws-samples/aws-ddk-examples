@@ -1,6 +1,17 @@
 import json
-
+import argparse
 import boto3
+
+argParser = argparse.ArgumentParser()
+argParser.add_argument("-p", "--profile", help="profile name")
+argParser.add_argument("-r", "--region", help="aws region")
+
+args = argParser.parse_args()
+
+profile = args.profile if args.profile else "default"
+region = args.region if args.region else "us-east-1"
+
+boto3.setup_default_session(profile_name=profile, region_name=region)
 
 ddb = boto3.resource("dynamodb")
 
