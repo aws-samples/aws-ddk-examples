@@ -169,8 +169,6 @@ Before deploying the pipeline, edit the `ddk.json` file for the environment you 
 3. Set cicd_enabled to `true` or `false` depending on your usecase
 
 
-The `ddk.json` is the same level as `app.py`. 
-
 Additionally, edit the `parameters.json` file under the path `data_lake/pipelines/parameters.json` with the correct:
 
 1. `team` — The name of the team which owns the pipeline.
@@ -212,7 +210,7 @@ $ git push --set-upstream origin main
 <br />
 <br />
 
-### Deploying SDLF 
+### Deploying SDLF
 
 <br />
 
@@ -221,23 +219,22 @@ Once the above steps are performed, verify the below and run the deploy command 
 1.  `ddk.json` file is updated with required configuration
 2.  `parameters.json` file is updated if required
 
-```
-```
-FOR CICD
+```shell
+# FOR CICD
 $ cdk deploy --profile [AWS_PROFILE_CICD]
 
-FOR NO CICD
-$ cdk deploy --all --profile [AWS_PROFILE_CICD]
-
-```
+# FOR NO CICD
+$ cdk deploy --all --profile [AWS_PROFILE]
 ```
 
-The deploy all step deploys an AWS CICD CodePipeline along with its respective AWS CloudFormation Stacks. The last stage of each pipeline delivers the SDLF Data Lake infrastructure respectively in the child (default dev) environment through CDK/CloudFormation.
+Depending on CICD or not, it deploys all step deploys an AWS CICD CodePipeline along with its respective AWS CloudFormation Stacks. The last stage of each pipeline delivers the SDLF Data Lake infrastructure respectively in the child (default dev) environment through CDK/CloudFormation. For Non CICD deployment, it will directly deploy all SDLF components.
 
-_Note: when you do the initial deployment in a brand new account, you may encounter some transient errors in CodePipeline or CodeBuild as it may take some time (typically a couple of hours) for AWS to provision your capacity in those services. If this happens you can wait some time and click the Retry button on CodePipeline to retry a failed stage._
+*When you do the initial deployment in a brand new account, you may encounter some transient errors in CodePipeline or CodeBuild as it may take some time (typically a couple of hours) for AWS to provision your capacity in those services. If this happens you can wait some time and click the Retry button on CodePipeline to retry a failed stage.*
 
 <br />
 <br />
+
+---
 
 ### Datasets
 
@@ -256,6 +253,8 @@ For this QuickStart, a Glue database alongside Lake Formation permissions are cr
 <br />
 <br />
 
+---
+
 ### Pipelines
 
 <br />
@@ -267,6 +266,8 @@ In the pipelines directory, these stage blueprints are instantiated and wired to
 <br />
 <br />
 
+---
+
 ### Data Lake Processing sample data
 
 <br />
@@ -275,21 +276,24 @@ In the pipelines directory, these stage blueprints are instantiated and wired to
 
 - Execute the below command with the necessary details for the variables such as `BUCKET_NAME`, `PROFILE` and `REGION`. Once executed it will put the data in respective s3 bucket and start data lake processing. You can update the file to also copy other sample data, or change the `DATASET` and `TEAM` parameters to test multiple pipelines.
 
-```
+```shell
 $ sh ./examples/copy.sh BUCKET_NAME REGION PROFILE
 ```
 
 <br />
 <br />
 
+---
 
-## Adding New Datasets with Custom Transformations in the Same Pipeline
+### Adding New Datasets with Custom Transformations in the Same Pipeline
 
 <br />
 
+*Remember if using typescript for CDK infrastructure-as-code, the SDLF library is still written in **python** and all custom transformation code will need to be* **python**
+
 1. For the `parameters.json` file located at the path `data_lake/pipelines/`, specify a new dictionary for the creation of a new dataset, for example:
 
-```
+```json
 {
     "dev": [
         {
@@ -316,37 +320,38 @@ $ sh ./examples/copy.sh BUCKET_NAME REGION PROFILE
 
 2. Create new transformation code for the new dataset for both the Stage A and Stage B step functions to use to process your data being ingested (the defaults one created are `sdlf_light_transform.py` and `sdlf_heavy_transform.py`). Add the transformation code to the following paths for light and heavy transforms respectively:
 
-```
+```shell
 data_lake/src/layers/data_lake_library/python/datalake_library/transforms/stage_a_transforms/sdlf_light_transform.py
 
 data_lake/src/layers/data_lake_library/python/datalake_library/transforms/stage_b_transforms/sdlf_heavy_transform.py
 ```
 
-NOTE: Use the `sdlf_light_transform.py` and `sdlf_heavy_transform.py` as reference for how to structure the file. The names of the files should match the names of the `stage_a_transform` and `stage_b_transform` specified in the `parameters.json` above.
+*Use the `sdlf_light_transform.py` and `sdlf_heavy_transform.py` as reference for how to structure the file. The names of the files should match the names of the `stage_a_transform` and `stage_b_transform` specified in the `parameters.json` above.*
 
 3. Add a new python script for a Glue Job specific to this dataset under the path:
 
-```
+```shell
 data_lake/src/glue/pyshell_scripts/sdlf_heavy_transform/<TEAM_NAME>/<DATASET_NAME>/main.py
 ```
 
-NOTE: The `TEAM_NAME` and `DATASET_NAME` as part of the file path should match the dataset specified in the `parameters.json` above.
+*The `TEAM_NAME` and `DATASET_NAME` as part of the file path should match the dataset specified in the `parameters.json` above.*
 
 4. Push your code to the remote CodeCommit repository and the DDK SDLF Data Lake will automatically create new resources for your additional dataset.
 
 <br />
 <br />
 
+---
 
-## Adding New Pipelines
+### Adding New Pipelines
 
 <br />
 
-If you want to provide different step machines that what is provided out of the box for DDK SDLF, follow the steps below:
+**If you want to provide different step machines that what is provided out of the box for DDK SDLF, follow the steps below:**
 
 1. In the `data_lake/pipelines/parameters.json` file, specify a new dictionary for the creation of a new pipeline, for example:
 
-```
+```json
 {
     "dev": [
         {
@@ -368,96 +373,103 @@ If you want to provide different step machines that what is provided out of the 
             }
         }
     ]
-} 
+}
 ```
 
-2. Follow the steps for adding a **Adding New Datasets with Custom Transformations in the Same Pipeline** above for the new dataset specified in the `parameters.json` (Ensure that the `dataset` name does NOT exist in other pipelines for the same team).
+2. Follow the steps for [adding new datasets with custom transformation](#adding-new-datasets-with-custom-transformations-in-the-same-pipeline) above for the new dataset specified in the `parameters.json`
+
+*Ensure that the `dataset` name does NOT exist in other pipelines for the same team.*
 
 3. Adding new Custom Stage to a Pipeline
+
+---
 
 - Determine what the new pipeline must look like and if you can re-use existing stages or require new custom stages.
 
 - Add a folder to the pipelines directory for your custom pipeline, e.g. "pipelines/main_pipeline/".
 
-- If required to have custom stages, create new files in the folder for your pipeline with the custom stages you wish to have for your data processing pipeline by using the default `data_lake/pipelines/common_stages/sdlf_light_transform.py` and `data_lake/pipelines/common_stages/sdlf_heavy_transform.py` files as reference.
+- If required to have custom stages, create new files in the folder for your pipeline with the custom stages you wish to have for your data processing pipeline by using the default `src/datalake/pipelines/common-stages/sdlf-light-transform.ts` and `src/datalake/pipelines/common-stages/sdlf-heavy-transform.ts` files as reference.
 
-    - The default stages `sdlf_light_transform.py` and `sdlf_heavy_transform.py` include lambdas, queues and step function definitions for your pipeline written as CDK and DDK Constructs
+    - The default stages `sdlf-light-transform.ts` and `sdlf-heavy-transform.ts` include lambdas, queues and step function definitions for your pipeline written as CDK and DDK Constructs
 
-    -  Ensure the custom stages have the following function (`def target()` `def state_machine()` `def event_pattern()` is the first resource triggered in the stage):
-    
-    ```
-    @property
-    def targets(self) -> Optional[List[events.IRuleTarget]]:
-        return [targets.LambdaFunction(self._lambda)]
+    -  Ensure the custom stages have the properties `targets`, `stateMachine`, and `eventPattern`:
 
-    @property
-    def state_machine(self):
-        return self._state_machine
+    ```typescript
+    readonly targets?: events.IRuleTarget[];
+    readonly eventPattern?: events.EventPattern;
+    readonly stateMachine: sfn.StateMachine;
 
-    @property
-    def event_pattern(self):
-        return self._event_pattern
-    ```
+    constructor(scope: Construct, id: string, props: MainPipelineProps) {
+        super(scope, id, props);
 
-- Add the stages in the `__init__.py` file of your custom pipeline directory.
+        this.targets = [...];
+        this.stateMachine = ...;
+        this.eventPattern = ...;
+    }
+
+- Add the stages in the `index.ts` file of your custom pipeline directory.
+
+---
 
 4. Creating a new Custom Pipeline
 
-- Add Python files to define both your pipeline and it's associated dataset to your custom pipeline directory. You can use the `pipelines/standard_pipeline/standard_pipeline.py` and `pipelines/standard_pipeline/standard_dataset.py` as examples.
+- Add TypeScruot files to define both your pipeline and it's associated dataset to your custom pipeline directory. You can use the `pipelines/standard-pipeline/standard-pipeline.ts` and `pipelines/standard-pipeline/standard-dataset-stack.ts` as examples.
 
-    - You should define the base, shared (across datasets) infrastructure of the pipeline in it's `__init__(...)` method.
-    
-    - Each pipeline must implement the `SDLFPipeline` protocol defined in `pipelines/sdlf_base_stack.py`. Specifically, it must provide a `register_dataset(self, dataset: str, config: Dict[str, Any])` function which creates any infrastructure specific to each dataset and registers the dataset to the pipeline (such as creating EventBridge rules for new data arriving in S3 for that dataset). It must also include a `PIPELINE_TYPE` class variable that defines the value used in `parameters.json` to register a dataset to that pipeline.
+    - You should define the base, shared (across datasets) infrastructure of the pipeline, in its constructor method.
 
-    - As seen in `standard_pipeline.py` link the custom stages in your Data Pipeline using the DDK `DataPipeline` class as shown below:
+    - Each pipeline must implement the `SDLFPipeline` protocol defined in `pipelines/sdlf-base-stack.ts`. Specifically, it must provide a `registerDataset(dataset: string, config: StandardDatasetConfig)` function which creates any infrastructure specific to each dataset and registers the dataset to the pipeline (such as creating EventBridge rules for new data arriving in S3 for that dataset). It must also include a `PIPELINE_TYPE` class variable that defines the value used in `parameters.json` to register a dataset to that pipeline.
 
-```py
-self._data_lake_pipeline: DataPipeline = (
-    DataPipeline(
-        self,
-        id=self._pipeline_id,
-        name=f"{self._resource_prefix}-DataPipeline-{self._team}-{self.PIPELINE_TYPE}-{self._environment_id}",
-        description=f"{self._resource_prefix} data lake pipeline",
-    )
-    .add_stage(self._s3_event_capture_stage)  # type: ignore
-    .add_stage(self._data_lake_light_transform, skip_rule=True)  # configure rule on register_dataset() call
-    .add_stage(data_lake_heavy_transform, skip_rule=True)
-)
+    - As seen in `standard-pipeline.ts` link the custom stages in your Data Pipeline using the DDK `DataPipeline` class as shown below:
+
+```javascript
+this.datalakePipeline = new DataPipeline(this, this.pipelineId, {
+      name: `${this.resourcePrefix}-DataPipeline-${this.team}-${PIPELINE_TYPE}-${this.environmentId}`,
+      description: `${this.resourcePrefix} data lake pipeline`
+    })
+      .addStage({ stage: this.s3EventCaptureStage })
+      .addStage({ stage: this.datalakeLightTransform, skipRule: true })
+      .addStage({ stage: datalakeHeavyTransform, skipRule: true });
 ```
 
-_NOTE: You can leverage AWS DDK’s built-in S3 Event Stage to set up event-driven architectures and trigger your data processing pipelines_
+*You can leverage AWS DDK’s built-in S3 Event Stage to set up event-driven architectures and trigger your data processing pipelines*
 
 - Once you have defined your pipeline and stages, allow teams to use the pipeline by updating the `data_lake/pipelines/sdlf_base_stack.py` similar to the following:
 
     - Change the code block in the `sdlf_base_stack.py` file to check the `customer_config` for your custom `pipeline_type` and create the pipeline as seen below:
 
-```py
-for customer_config in customer_configs:
-    ...
-        if pipeline_type == StandardPipeline.PIPELINE_TYPE:
-            pipeline = StandardPipeline(
-                self,
-                construct_id=f"{team}-{pipeline_type}",
-                environment_id=self._environment_id,
-                resource_prefix=self._resource_prefix,
-                team=team,
-                foundations_stage=self._foundations_stage,
-                wrangler_layer=self._wrangler_layer,
-                app=self._app,
-                org=self._org,
-                runtime=lmbda.Runtime.PYTHON_3_9
-            )
-        elif pipeline_type == YourCustomPipeline.PIPELINE_TYPE:
-            pipeline = YourCustomPipeline(...)  # Create Pipeline
+```javascript
+customerConfigs[props.environmentId].forEach((customerConfig: any) => {
+      const dataset = customerConfig.dataset;
+      const team = customerConfig.team;
+      const pipelineType = customerConfig.pipeline ?? 'standard';
+
+      const pipelineName = `${team}-${pipelineType}`;
+      var pipeline: StandardPipeline | CustomPipeline;
+      if (!(pipelineName in pipelines)) {
+        if (pipelineType == 'standard') {
+          pipeline = new StandardPipeline(this, `${team}-${pipelineType}`, {
+            environmentId: props.environmentId,
+            resourcePrefix: this.resourcePrefix,
+            team: team,
+            foundationsStage: this.foundationsStage,
+            wranglerLayer: this.wranglerLayer,
+            app: this.app,
+            org: this.org,
+            runtime: lambda.Runtime.PYTHON_3_9
+          });
+        } else if (pipelineType == 'custom') {
     ...
 ```
+
 
 5. Push your code to the remote CodeCommit repository and the DDK SDLF Data Lake will automatically create new resources for your additional pipeline.
 
 <br />
 <br />
 
-## Cleaning Up SDLF Infrastructure
+---
+
+### Cleaning Up SDLF Infrastructure
 
 <br />
 
@@ -467,25 +479,29 @@ Once the solution has been deployed and tested, use the following command to cle
 $ make delete_all or make delete_all_no_cicd
 ```
 
-_NOTE:_ Before running this command, look into the `Makefile` and ensure that:
+Before running this command, look into the `Makefile` and ensure that:
 
 1.  The `delete_repositories` function is passing the correct `-d REPO_NAME` (default: `sdlf-ddk-example`)
 
-2.  The `delete_bootstrap` or `delete_bootstrap_no_cicd` function is passing the correct `--stack-name BOOTSTRAP_STACK_NAME` (default: `DdkDevBootstrap`)
+2.  The `delete_bootstrap` or `delete_bootstrap_no_cicd` function is passing the correct `--stack-name BOOTSTRAP_STACK_NAME` (default: `CDKToolkit`)
 
 3.  For Single account deployment, make sure you change the `CICD`, `CHILD` variables to your same respective aws profile name. Also update the `ENV` matching `ddk.json`
 
 This command will use a series of CLI commands and python scripts in order to clean up your AWS account environment.
 
-## Optional Utils 
+---
+
+### Optional Utils
 <br />
 
 Incase you need synthesised YAML templates of the CDK apps, you can create the below command. Make sure your `cicd_enabled` parameter is set in ddk.json
 
-```
+```shell
 make cdk_synth_to_yaml
 ```
 
 Based on cicd_enabled you will get bunch of YAML templates under a new subdirectory `YAML/`
 
-_NOTE:_ We recommend to use CDK directly for deployment for better customer experience instead of systhesized YAML template. Deployment and test of YAML template directly to CFN is at your own discretion
+*We recommend to use CDK directly for deployment for better customer experience instead of synthesized YAML template. Deployment and test of YAML template directly to CFN is at your own discretion.*
+
+---
