@@ -28,6 +28,9 @@ class ListPatterns:
 
     def check_pattern(self, pattern, lang):
         """Initialize a git repo"""
+        if(pattern is None):
+            print("Pattern cannot be None, please provide an available pattern or run python3 script.py -t 'list' to know about available patterns")
+            sys.exit(2)
         if(lang == "python" and pattern not in self.python_list):
             print(f"{pattern} is not available in python or is not a valid pattern")
             print("please open an issue on aws-ddk-examples on github if you are interested or run python3 script.py -t 'list' to know about available patterns")
@@ -122,8 +125,10 @@ def main():
     type = args.type
     pattern = args.pattern
     lang = args.language
+    if(lang is None):
+        lang="python"
+        print("Since -l/--language was not provided, defaulting to python")
   
-
     if(type == "init"):
         sparse_paths = f"{pattern}/{lang}"
         list_pattern = ListPatterns()
