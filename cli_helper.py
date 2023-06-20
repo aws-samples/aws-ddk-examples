@@ -128,7 +128,7 @@ def main():
         sparse_paths = f"{pattern}/{lang}"
         list_pattern = ListPatterns()
         list_pattern.check_pattern(pattern=pattern, lang=lang)
-        git_sparse_checkout = GitSpareseCheckout(repo_url, directory, sparse_paths)
+        git_sparse_checkout = GitSpareseCheckout(repo_url='https://github.com/aws-samples/aws-ddk-examples', directory='aws-ddk-temp', sparse_paths=sparse_paths)
         git_sparse_checkout.check_directory(pattern)
         git_sparse_checkout.clone()
     elif(type == "list"):
@@ -137,10 +137,6 @@ def main():
         else:
             list_pattern = ListPatterns()
             list_pattern.print_patterns()
-
-
-repo_url = 'https://github.com/aws-samples/aws-ddk-examples'
-directory = 'aws-ddk-temp'
 
 if __name__ == "__main__":
     main()
