@@ -48,7 +48,7 @@ python3 cli_helper.py -t "list"
 To init an available pattern into your directory
 
 ```shell
-python3 cli_helper.py -t "init" -p "patternName: e.g sdlf-ddk-lightweight" -l "language: e.g python|typescript"
+python3 cli_helper.py -t "init" -p "sdlf-ddk-lightweight" -l "python"
 ```
 
 > **Earlier Versions of DDK**
