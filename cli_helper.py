@@ -125,11 +125,12 @@ def main():
     type = args.type
     pattern = args.pattern
     lang = args.language
-    if(lang is None):
-        lang="python"
-        print("Since -l/--language was not provided, defaulting to python")
+    
   
     if(type == "init"):
+        if(lang is None):
+            lang="python"
+            print("Since -l/--language was not provided, defaulting to python")
         sparse_paths = f"{pattern}/{lang}"
         list_pattern = ListPatterns()
         list_pattern.check_pattern(pattern=pattern, lang=lang)
