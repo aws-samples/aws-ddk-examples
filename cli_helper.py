@@ -1,6 +1,6 @@
 import os
 import subprocess
-import getopt
+import argparse
 import sys
 import shutil
 import urllib3
@@ -102,11 +102,8 @@ class GitSpareseCheckout:
             sys.exit(2)
 
         dir = self._create_directory(self.directory)
-        print(dir)
         dir_parent = os.path.dirname(dir)
-        print(dir_parent)
         pattern_name = self.sparse_paths.split('/')[0]
-        print(pattern_name)
 
         self._initialize_git()
         self._clone_repo_with_sparse_checkout()
@@ -117,30 +114,18 @@ def main(argv):
     long_options = ["help", "type=", "pattern=", "language="]
 
     pattern = None
+    
+    parser = argparse.ArgumentParser(description="Python CLI for DDK example pipeline")
 
-    try:
-        opts, args = getopt.getopt(argv, short_options, long_options)
-    except getopt.GetoptError:
-        print("invalid command")
-        sys.exit(2)
+    parser.add_argument('-t', '--type', choices=['init', 'list'], help='Specify type (init or list)', required=True)
+    parser.add_argument('-p', '--pattern', help='Choose from available patterns', required=False)
+    parser.add_argument('-l', '--language', choices=['python', 'typescript'], help='Specify language (python or typescript)', required=False)
 
-    for opt, arg in opts:
-        if opt in ("-h", "--help"):
-            print("Usage: python script.py -p <pattern_name> -l <language>")
-        elif opt in ("-t", "--type"):
-            type = arg
-            if(type not in ["init", "list"]):
-                print("invalid type: Only init and list allowed")
-                sys.exit(2)
-        elif opt in ("-p", "--pattern"):
-            pattern = arg
-            pattern = pattern.lower()
-        elif opt in ("-l", "--language"):
-            lang = arg
-            lang = lang.lower()
-            if(lang not in ["python", "typescript"]):
-                print("invalid lang: Only python and typescript allowed")
-                sys.exit(2)
+    args = parser.parse_args()
+    type = args.type
+    pattern = args.pattern
+    lang = args.language
+  
 
     if(type == "init"):
         sparse_paths = f"{pattern}/{lang}"
@@ -150,7 +135,7 @@ def main(argv):
         git_sparse_checkout.check_directory(pattern)
         git_sparse_checkout.clone()
     elif(type == "list"):
-        if(pattern is not None):
+        if(pattern is not None or lang is not None):
             print("Invalid: For list -p and -l is not required")
         else:
             list_pattern = ListPatterns()
