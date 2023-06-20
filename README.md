@@ -17,6 +17,40 @@ It is assumed that you are already somewhat familiar with the AWS DDK. If not, w
 
 If you would like to start your journey by looking at an example, we recommend you to start with [Kinesis to S3 Data Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/basic-data-pipeline) example from the list below.
 
+## Helper scipt for aws-ddk-examples
+Create this optional directory for DDK patterns
+
+```shell
+mkdir directory_name
+cd directory_name
+```
+
+Download the helper script using the below command
+
+```shell
+curl -LJO https://raw.githubusercontent.com/aws-samples/aws-ddk-examples/feat/cli-helper/cli_helper.py
+```
+
+Once the script is downloaded, execute the script using the below command
+
+For help regarding usage
+
+```shell
+python3 cli_helper.py -h
+```
+
+For list existing patterns
+
+```shell
+python3 cli_helper.py -t "list"
+```
+
+To init an available pattern into your directory
+
+```shell
+python3 cli_helper.py -t "init" -p "patternName: e.g appflow_athena" -l "language: e.g python|typescript"
+```
+
 > **Earlier Versions of DDK**
 > [See here](https://github.com/aws-samples/aws-ddk-examples/tree/0.x.x#readme) for examples using the library before the `1.0.0` major version release.
 
