@@ -100,10 +100,7 @@ class GitSpareseCheckout:
 
     def clone(self):
         """Start the process for cloning"""
-        if not self.directory or not self.sparse_paths:
-            print("Usage: python script.py -p <pattern_name> -l <language>")
-            sys.exit(2)
-
+       
         dir = self._create_directory(self.directory)
         dir_parent = os.path.dirname(dir)
         pattern_name = self.sparse_paths.split('/')[0]
@@ -112,10 +109,7 @@ class GitSpareseCheckout:
         self._clone_repo_with_sparse_checkout()
         self._clean_up(source_directory = f"{dir}/{pattern_name}", target_directory = f"{dir_parent}/{pattern_name}")
 
-def main(argv):
-    short_options = "ht:p:l:"
-    long_options = ["help", "type=", "pattern=", "language="]
-
+def main():
     pattern = None
     
     parser = argparse.ArgumentParser(description="Python CLI for DDK example pipeline")
@@ -139,7 +133,7 @@ def main(argv):
         git_sparse_checkout.clone()
     elif(type == "list"):
         if(pattern is not None or lang is not None):
-            print("Invalid: For list -p and -l is not required")
+            print("Invalid: For list -p/--pattern and -l/--language is not required")
         else:
             list_pattern = ListPatterns()
             list_pattern.print_patterns()
@@ -149,7 +143,7 @@ repo_url = 'https://github.com/aws-samples/aws-ddk-examples'
 directory = 'aws-ddk-temp'
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()
 
 
 
