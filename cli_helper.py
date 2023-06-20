@@ -99,7 +99,7 @@ class GitSpareseCheckout:
             sparse_file.write(self.sparse_paths)
 
         
-        subprocess.run(['git', 'pull' , 'origin', 'main'], cwd=self.directory)
+        subprocess.run(['git', 'pull' , 'origin', 'feat/cli-helper'], cwd=self.directory)
 
     def clone(self):
         """Start the process for cloning"""
