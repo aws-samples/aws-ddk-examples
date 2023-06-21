@@ -4,13 +4,7 @@ In this DDK example, an S3 *"Object Created"* event triggers a Glue Job defined 
 
 ## Walkthrough
 
-To use the example, clone the repo:
-
-```console
-git clone https://github.com/aws-samples/aws-ddk-examples.git
-```
-
-Next, navigate into the example directory, and create a virtual environment:
+Navigate into the example directory, and create a virtual environment:
 
 ```console
 cd simple-glue-transform && python3 -m venv .venv

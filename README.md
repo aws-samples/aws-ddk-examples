@@ -17,6 +17,40 @@ It is assumed that you are already somewhat familiar with the AWS DDK. If not, w
 
 If you would like to start your journey by looking at an example, we recommend you to start with [Kinesis to S3 Data Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/basic-data-pipeline) example from the list below.
 
+## Helper scipt for aws-ddk-examples
+Create this optional directory for DDK patterns
+
+```shell
+mkdir directory_name
+cd directory_name
+```
+
+Download the helper script using the below command
+
+```shell
+curl -LJO https://raw.githubusercontent.com/aws-samples/aws-ddk-examples/feat/cli-helper/cli_helper.py
+```
+
+Once the script is downloaded, execute the script using the below command
+
+For help regarding usage
+
+```shell
+python3 cli_helper.py -h
+```
+
+For list existing patterns
+
+```shell
+python3 cli_helper.py -t "list"
+```
+
+To init an available pattern into your directory
+
+```shell
+python3 cli_helper.py -t "init" -p "sdlf-ddk-lightweight" -l "python"
+```
+
 > **Earlier Versions of DDK**
 > [See here](https://github.com/aws-samples/aws-ddk-examples/tree/0.x.x#readme) for examples using the library before the `1.0.0` major version release.
 
@@ -25,11 +59,11 @@ If you would like to start your journey by looking at an example, we recommend y
 | Examples                                                                                                                                    |
 |---------------------------------------------------------------------------------------------------------------------------------------------|
 | [Kinesis to S3 Data Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/basic-data-pipeline)                                |
-| [Google Analytics Appflow Data Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/appflow_athena)                          |
+| [Google Analytics Appflow Data Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/google-analytics-data-using-appflow)     |
 | [Athena Query Execution Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/athena-query-execution-pipeline)                |
 | [Athena Views Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/athena-views-pipeline)                                    |
 | [DataBrew Athena Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/databrew-athena)                                       |
-| [Private Artifactory](https://github.com/aws-samples/aws-ddk-examples/tree/main/private_artifactory)                                        |
+| [Private Artifactory](https://github.com/aws-samples/aws-ddk-examples/tree/main/private-artifactory)                                        |
 | [Cross-Account / Cross-Region Data Pipelines](https://github.com/aws-samples/aws-ddk-examples/tree/main/cross-account-region-data-pipeline) |
 | [Data Validation & Cataloging Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/data-validation-cataloging-pipeline)      |
 | [SDLF DDK Lightweight](https://github.com/aws-samples/aws-ddk-examples/tree/main/sdlf-ddk-lightweight)                                      |

@@ -6,13 +6,7 @@ In this DDK example, you build a data pipeline that ingests data to S3 using Kin
 
 ## Walkthrough
 
-To use the example, clone the repo:
-
-```console
-git clone https://github.com/aws-samples/aws-ddk-examples.git
-```
-
-Next, navigate into the example directory, and create a virtual environment:
+Navigate into the example directory, and create a virtual environment:
 
 ```console
 cd basic-data-pipeline && python3 -m venv .venv

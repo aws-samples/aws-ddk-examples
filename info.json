@@ -1,0 +1,49 @@
+{
+    "patterns": {
+        "google-analytics-data-using-appflow": {
+            "python": true,
+            "typescript": false
+        },
+        "athena-query-execution-pipeline": {
+            "python": true,
+            "typescript": false
+        },
+        "athena-views-pipeline": {
+            "python": true,
+            "typescript": false
+        },
+        "basic-data-pipeline": {
+            "python": true,
+            "typescript": false
+        },
+        "cross-account-region-data-pipeline": {
+            "python": true,
+            "typescript": false
+        },
+        "data-validation-cataloging-pipeline": {
+            "python": true,
+            "typescript": false
+        },
+        "databrew-athena": {
+            "python": true,
+            "typescript": false
+        },
+        "file-standardization-pipeline": {
+            "python": true,
+            "typescript": true
+        },
+        "private-artifactory": {
+            "python": true,
+            "typescript": false
+        },
+        "sdlf-ddk-lightweight": {
+            "python": true,
+            "typescript": true
+        },
+        "simple-glue-transform": {
+            "python": true,
+            "typescript": false
+        }
+       
+    }
+}
