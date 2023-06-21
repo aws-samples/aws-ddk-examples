@@ -1,6 +1,6 @@
 {
     "patterns": {
-        "appflow_athena": {
+        "google-analytics-data-using-appflow": {
             "python": true,
             "typescript": false
         },
@@ -32,7 +32,7 @@
             "python": true,
             "typescript": true
         },
-        "private_artifactory": {
+        "private-artifactory": {
             "python": true,
             "typescript": false
         },
