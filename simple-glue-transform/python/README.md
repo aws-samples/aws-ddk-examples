@@ -7,7 +7,7 @@ In this DDK example, an S3 *"Object Created"* event triggers a Glue Job defined 
 Navigate into the example directory, and create a virtual environment:
 
 ```console
-cd simple-glue-transform && python3 -m venv .venv
+cd simple-glue-transform/python && python3 -m venv .venv
 ```
 
 To activate the virtual environment, and install the dependencies, run:
