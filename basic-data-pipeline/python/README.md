@@ -9,7 +9,7 @@ In this DDK example, you build a data pipeline that ingests data to S3 using Kin
 Navigate into the example directory, and create a virtual environment:
 
 ```console
-cd basic-data-pipeline/python && python3 -m venv .venv
+cd basic-data-pipeline && python3 -m venv .venv
 ```
 
 To activate the virtual environment, and install the dependencies, run:

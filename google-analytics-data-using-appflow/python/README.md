@@ -11,7 +11,7 @@ Note: It is assumed that a [OAuth connection](https://docs.aws.amazon.com/appflo
 Navigate into the example directory, and create a virtual environment:
 
 ```console
-cd google-analytics-data-using-appflow/python && python3 -m venv .venv
+cd google-analytics-data-using-appflow && python3 -m venv .venv
 ```
 
 To activate the virtual environment, and install the dependencies, run:

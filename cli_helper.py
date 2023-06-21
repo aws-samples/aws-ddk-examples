@@ -110,7 +110,12 @@ class GitSpareseCheckout:
 
         self._initialize_git()
         self._clone_repo_with_sparse_checkout()
-        self._clean_up(source_directory = f"{dir}/{pattern_name}", target_directory = f"{dir_parent}/{pattern_name}")
+        self._clean_up(source_directory = f"{dir}/{self.sparse_paths}", target_directory = f"{dir_parent}/{pattern_name}")
+        print("-----------------------------------------------------------------------\n")
+        print(f"**** Complete pattern is inside {dir_parent}/{pattern_name} ****\n")
+        print(f"**** Useful Command ****\n")
+        print(f"**** cd {pattern_name} to open the pattern in your cli ****\n")
+        print(f"**** Follow the README.md for configuration and deployment ****\n")
 
 def main():
     pattern = None
@@ -146,13 +151,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-        
-
-        
-
-        

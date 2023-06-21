@@ -16,7 +16,7 @@ You are now fully equipped to distribute and reuse your Python code across your 
 Navigate into the example directory, and create a virtual environment:
 
 ```console
-cd private-artifactory/python && python3 -m venv .venv
+cd private-artifactory && python3 -m venv .venv
 ```
 
 To activate the virtual environment, and install the dependencies, run:
