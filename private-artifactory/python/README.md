@@ -13,16 +13,10 @@ You are now fully equipped to distribute and reuse your Python code across your 
 
 ## Walkthrough
 
-To use the example, clone the repo:
+Navigate into the example directory, and create a virtual environment:
 
 ```console
-git clone https://github.com/aws-samples/aws-ddk-examples.git
-```
-
-Next, navigate into the example directory, and create a virtual environment:
-
-```console
-cd private_artifactory && python3 -m venv .venv
+cd private-artifactory && python3 -m venv .venv
 ```
 
 To activate the virtual environment, and install the dependencies, run:

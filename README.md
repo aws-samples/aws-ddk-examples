@@ -59,11 +59,11 @@ python3 cli_helper.py -t "init" -p "sdlf-ddk-lightweight" -l "python"
 | Examples                                                                                                                                    |
 |---------------------------------------------------------------------------------------------------------------------------------------------|
 | [Kinesis to S3 Data Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/basic-data-pipeline)                                |
-| [Google Analytics Appflow Data Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/appflow_athena)                          |
+| [Google Analytics Appflow Data Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/google-analytics-data-using-appflow)     |
 | [Athena Query Execution Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/athena-query-execution-pipeline)                |
 | [Athena Views Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/athena-views-pipeline)                                    |
 | [DataBrew Athena Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/databrew-athena)                                       |
-| [Private Artifactory](https://github.com/aws-samples/aws-ddk-examples/tree/main/private_artifactory)                                        |
+| [Private Artifactory](https://github.com/aws-samples/aws-ddk-examples/tree/main/private-artifactory)                                        |
 | [Cross-Account / Cross-Region Data Pipelines](https://github.com/aws-samples/aws-ddk-examples/tree/main/cross-account-region-data-pipeline) |
 | [Data Validation & Cataloging Pipeline](https://github.com/aws-samples/aws-ddk-examples/tree/main/data-validation-cataloging-pipeline)      |
 | [SDLF DDK Lightweight](https://github.com/aws-samples/aws-ddk-examples/tree/main/sdlf-ddk-lightweight)                                      |

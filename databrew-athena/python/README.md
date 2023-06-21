@@ -14,13 +14,7 @@ The workflow includes the following steps:
 
 # Walkthrough
 
-To use the example, clone the repo:
-
-```console
-git clone https://github.com/aws-samples/aws-ddk-examples.git
-```
-
-Next, navigate into the example directory, and create a virtual environment:
+Navigate into the example directory, and create a virtual environment:
 
 ```console
 cd databrew-athena && python3 -m venv .venv

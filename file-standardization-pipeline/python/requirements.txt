@@ -1,4 +1,4 @@
-aws_ddk_core==1.0.0
+aws_ddk_core==1.0.1
 aws-cdk-lib==2.71.0
 constructs>=10.0.5
 

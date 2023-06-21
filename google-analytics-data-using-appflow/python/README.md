@@ -8,16 +8,10 @@ Note: It is assumed that a [OAuth connection](https://docs.aws.amazon.com/appflo
 
 ## Walkthrough
 
-To use the example, clone the repo:
+Navigate into the example directory, and create a virtual environment:
 
 ```console
-git clone https://github.com/aws-samples/aws-ddk-examples.git
-```
-
-Next, navigate into the example directory, and create a virtual environment:
-
-```console
-cd appflow_athena && python3 -m venv .venv
+cd google-analytics-data-using-appflow && python3 -m venv .venv
 ```
 
 To activate the virtual environment, and install the dependencies, run:
