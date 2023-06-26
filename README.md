@@ -24,7 +24,6 @@ Create this optional directory for DDK patterns
 mkdir directory_name
 cd directory_name
 ```
-
 Download the helper script using the below command
 
 ```shell
@@ -32,6 +31,10 @@ curl -LJO https://raw.githubusercontent.com/aws-samples/aws-ddk-examples/feat/cl
 ```
 
 Once the script is downloaded, execute the script using the below command
+
+```shell
+pip install urllib3
+```
 
 For help regarding usage
 
