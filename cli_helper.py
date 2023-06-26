@@ -16,7 +16,7 @@ class ListPatterns:
     def _list_patterns(self):
         """list patterns and segregate them based on language"""
         http = urllib3.PoolManager()
-        response = http.request('GET', 'https://raw.githubusercontent.com/aws-samples/aws-ddk-examples/feat/cli-helper/info.json')
+        response = http.request('GET', 'https://raw.githubusercontent.com/aws-samples/aws-ddk-examples/main/info.json')
         
         data = (json.loads(response.data)['patterns'])
 
@@ -99,7 +99,7 @@ class GitSpareseCheckout:
             sparse_file.write(self.sparse_paths)
 
         
-        subprocess.run(['git', 'pull' , 'origin', 'feat/cli-helper'], cwd=self.directory)
+        subprocess.run(['git', 'pull' , 'origin', 'main'], cwd=self.directory)
 
     def clone(self):
         """Start the process for cloning"""
