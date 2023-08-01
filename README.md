@@ -27,7 +27,7 @@ cd directory_name
 Download the helper script using the below command
 
 ```shell
-curl -LJO https://raw.githubusercontent.com/aws-samples/aws-ddk-examples/feat/cli-helper/cli_helper.py
+curl -LJO https://raw.githubusercontent.com/aws-samples/aws-ddk-examples/main/cli_helper.py
 ```
 
 Once the script is downloaded, execute the script using the below command
