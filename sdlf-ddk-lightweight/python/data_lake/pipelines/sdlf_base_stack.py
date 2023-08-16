@@ -17,10 +17,11 @@ import json
 import os
 from pathlib import Path
 from typing import Any, Dict, Protocol
-
+import aws_cdk as cdk
+import aws_cdk.aws_iam as iam
 import aws_cdk.aws_lambda as lmbda
 import aws_cdk.aws_ssm as ssm
-from aws_ddk_core import BaseStack
+from aws_ddk_core import BaseStack, MWAAEnvironment
 from constructs import Construct
 
 from ..foundations import FoundationsStack
@@ -79,6 +80,7 @@ class SDLFBaseStack(BaseStack):
 
         dataset_names: set[str] = set()
         pipelines: Dict[str, SDLFPipeline] = {}
+        self._mwaa_env = None
         # loop through values in parameters.json and create the necessary resources for each pipeline
         for customer_config in customer_configs:
             dataset = customer_config["dataset"]
@@ -86,6 +88,14 @@ class SDLFBaseStack(BaseStack):
             pipeline_type = customer_config.get(
                 "pipeline", StandardPipeline.PIPELINE_TYPE
             )
+            orchestration = customer_config.get(
+                "orchestration", "sfn"
+            ).lower()
+
+            
+            if(orchestration == "mwaa" and not self._mwaa_env):
+            # creates "MWAA environment" if orchestration is enabled through MWAA
+                self._mwaa_env = self._create_mwaa_env(team, pipeline_type)
 
             # PIPELINE CREATION
             pipeline: SDLFPipeline
@@ -98,6 +108,8 @@ class SDLFBaseStack(BaseStack):
                         environment_id=self._environment_id,
                         resource_prefix=self._resource_prefix,
                         team=team,
+                        mwaa_env =self._mwaa_env,
+                        orchestration=orchestration,
                         foundations_stage=self._foundations_stage,
                         wrangler_layer=self._wrangler_layer,
                         app=self._app,
@@ -132,7 +144,53 @@ class SDLFBaseStack(BaseStack):
                 pipeline.register_dataset(
                     dataset, config=customer_config.get("config", {})
                 )
+    def _create_mwaa_env(self,team,pipeline) -> None:
+        # mwaaa get all configs dynamically through ddk.json
+        data_lake_mwaa_env = MWAAEnvironment(
+            self,
+            id=f"{self._resource_prefix}-{self._environment_id}-mwaa-environment",
+            name=f"{self._resource_prefix}-{self._environment_id}-mwaa-environment",
+            airflow_configuration_options={'core.dag_run_conf_overrides_params':True} ,
+            vpc_cidr="10.44.0.0/16 ",
+            environment_class="mw1.small",
+            max_workers=1,
+            dag_s3_path="dags",
+            dag_files=[
+                os.path.join(f"{Path(__file__).parents[1]}", "src/dags/")
+            ],  # Change this to right directory path src/
 
+            additional_policy_statements = [
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=["lambda:InvokeFunction"],
+                    resources=[
+                        f"arn:aws:lambda:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}"
+                        + f":function:{self._resource_prefix}-{team}-{pipeline}-*"
+                    ],
+                ),
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        "logs:CreateLogStream",
+                        "logs:CreateLogGroup",
+                        "logs:PutLogEvents",
+                        "logs:GetLogEvents",
+                        "logs:GetLogRecord",
+                        "logs:GetLogGroupFields",
+                        "logs:GetQueryResults",
+                        "logs:DescribeLogGroups"
+
+                    ],
+                    resources=[
+                        f"arn:aws:logs:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}"
+                        + f":log-group:airflow-{self._resource_prefix}-*"
+                    ],
+                ),
+
+            ],
+        )
+
+        return data_lake_mwaa_env.mwaa_environment    
     def _create_wrangler_layer(self):
         wrangler_layer_version = lmbda.LayerVersion.from_layer_version_arn(
             self,

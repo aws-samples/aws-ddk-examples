@@ -35,6 +35,7 @@ from constructs import Construct
 @dataclass
 class SDLFHeavyTransformConfig:
     team: str
+    orchestation: str
     pipeline: str
     stage_bucket: s3.IBucket
     stage_bucket_key: kms.IKey
@@ -63,6 +64,7 @@ class SDLFHeavyTransform(StateMachineStage):
         self._props: Dict[str, Any] = props
         self._prefix = prefix
         self.team = self._config.team
+        self.orchestration = self._config.orchestation
         self.pipeline = self._config.pipeline
 
         # register heavy transform details in DDB octagon table
@@ -81,10 +83,11 @@ class SDLFHeavyTransform(StateMachineStage):
         error_task = self._create_lambda_task("error", None)
         check_job_task = self._create_lambda_task("check-job", "$.body.job")
 
+        if (self.orchestration=="sfn"):
         # build state machine
-        self._build_state_machine(
-            process_task, postupdate_task, error_task, check_job_task
-        )
+            self._build_state_machine(
+                process_task, postupdate_task, error_task, check_job_task
+            )
 
     def _build_state_machine(
         self,

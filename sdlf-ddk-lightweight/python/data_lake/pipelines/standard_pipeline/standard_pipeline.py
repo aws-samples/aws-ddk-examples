@@ -19,7 +19,7 @@ import aws_cdk as cdk
 import aws_cdk.aws_iam as iam
 import aws_cdk.aws_lambda as lmbda
 import aws_cdk.aws_ssm as ssm
-from aws_ddk_core import BaseStack, DataPipeline, S3EventStage
+from aws_ddk_core import BaseStack, DataPipeline,  S3EventStage, MWAATriggerDagsStage
 from constructs import Construct
 
 from ...foundations import FoundationsStack
@@ -50,6 +50,8 @@ class StandardPipeline(BaseStack):
         environment_id: str,
         resource_prefix: str,
         team: str,
+        mwaa_env: Any,
+        orchestration: str,
         foundations_stage: FoundationsStack,
         wrangler_layer: lmbda.ILayerVersion,
         app: str,
@@ -58,6 +60,8 @@ class StandardPipeline(BaseStack):
         **kwargs: Any,
     ) -> None:
         self._team = team
+        self._orchestration = orchestration
+        self._mwaa_env = mwaa_env
         self._environment_id = environment_id
         self._resource_prefix = resource_prefix
         super().__init__(
@@ -107,6 +111,7 @@ class StandardPipeline(BaseStack):
             environment_id=self._environment_id,
             config=SDLFLightTransformConfig(
                 team=self._team,
+                orchestation=self._orchestration,
                 pipeline=self.PIPELINE_TYPE,
                 raw_bucket=self._foundations_stage.raw_bucket,
                 raw_bucket_key=self._foundations_stage.raw_bucket_key,
@@ -137,6 +142,7 @@ class StandardPipeline(BaseStack):
             environment_id=self._environment_id,
             config=SDLFHeavyTransformConfig(
                 team=self._team,
+                orchestation=self._orchestration,
                 pipeline=self.PIPELINE_TYPE,
                 stage_bucket=self._foundations_stage.stage_bucket,
                 stage_bucket_key=self._foundations_stage.stage_bucket_key,
@@ -170,6 +176,35 @@ class StandardPipeline(BaseStack):
             )  # configure rule on register_dataset() call
             .add_stage(stage=data_lake_heavy_transform, skip_rule=True)
         )
+
+        if(self._orchestration == "mwaa"):
+            common_mwaa_trigger_dags_stage = MWAATriggerDagsStage(
+                self,
+                id=f"{self._resource_prefix}-{self._team}-{self.PIPELINE_TYPE}-trigger-dag-state-machine",
+                mwaa_environment_name=self._mwaa_env.name,
+                state_machine_name=f"{self._resource_prefix}-{self._team}-{self.PIPELINE_TYPE}-trigger-dag-state-machine",
+                dag_path="$.dag_ids",
+            )
+
+            self._state_machine = common_mwaa_trigger_dags_stage.state_machine
+
+            ssm.StringParameter(
+                self,
+                f"{self._resource_prefix}-{self._team}-{self.PIPELINE_TYPE}-state-machine-a-ssm",
+                parameter_name=f"/SDLF/SM/{self._team}/{self.PIPELINE_TYPE}StageASM",
+                string_value=self._state_machine.state_machine_arn,
+            )
+
+            ssm.StringParameter(
+                self,
+                f"{self._resource_prefix}-{self._team}-{self.PIPELINE_TYPE}-state-machine-b-ssm",
+                parameter_name=f"/SDLF/SM/{self._team}/{self.PIPELINE_TYPE}StageBSM",
+                string_value=self._state_machine.state_machine_arn,
+            )
+
+            self._data_lake_pipeline.add_stage(stage=common_mwaa_trigger_dags_stage, skip_rule=True)
+
+
         return data_lake_heavy_transform
 
     def _create_routing_lambda(self) -> lmbda.IFunction:

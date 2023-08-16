@@ -3,6 +3,7 @@
         {
             "dataset": "legislators",
             "pipeline": "standard",
+            "orchestration": "sfn",
             "team": "demoteam",
             "config": {
                 "stage_a_transform": "sdlf_light_transform",
