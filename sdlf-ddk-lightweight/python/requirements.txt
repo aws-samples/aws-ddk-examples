@@ -1,8 +1,8 @@
-aws_ddk_core==1.0.1
-boto3==1.24.11
-aws-cdk-lib==2.71.0
-aws-cdk.aws-glue-alpha==2.71.0a0
-aws-cdk.aws-kinesisfirehose-alpha==2.71.0a0
-aws-cdk.aws-kinesisfirehose-destinations-alpha==2.71.0a0
+aws_ddk_core==1.1.0
+boto3==1.28.10
+aws-cdk-lib==2.85.0
+aws-cdk.aws-glue-alpha==2.85.0a0
+aws-cdk.aws-kinesisfirehose-alpha==2.85.0a0
+aws-cdk.aws-kinesisfirehose-destinations-alpha==2.85.0a0
 constructs>=10.0.5
 
