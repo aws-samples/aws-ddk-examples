@@ -30,8 +30,10 @@ def lambda_handler(event, context):
             state_config = StateMachineConfiguration(
                 event_body["team"], event_body["pipeline"], event_body["pipeline_stage"]
             )
+            # add dag_id to event_body
+            event_body['dag_ids'] = [f"{event_body['team']}_{event_body['pipeline']}_{event_body['pipeline_stage']}" ]
             StatesInterface().run_state_machine(
-                state_config.get_stage_state_machine_arn, record["body"]
+                state_config.get_stage_state_machine_arn, event_body
             )
     except Exception as e:
         logger.error("Fatal error", exc_info=True)
