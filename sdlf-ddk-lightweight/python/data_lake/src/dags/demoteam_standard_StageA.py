@@ -3,14 +3,11 @@ import boto3
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.utils.dates import days_ago
-from airflow.operators.python_operator import PythonOperator
-from airflow.operators.dummy_operator import DummyOperator
-from airflow.providers.amazon.aws.operators.lambda_function import AwsLambdaInvokeFunctionOperator                                                                  
+from airflow.operators.python_operator import PythonOperator                                                                
 import logging
 import json
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-# Import any other required libraries for AWS Lambda invocation here
 
 # Default arguments for the DAG
 default_args = {
@@ -25,59 +22,65 @@ default_args = {
 dag = DAG(
     'demoteam_standard_StageA',
     default_args=default_args,
-    description='An Airflow DAG to invoke AWS Lambda functions',
+    description='Stage-A airflow dag to invoke AWS Lambda functions',
     schedule_interval=None,
+    render_template_as_native_obj=True,
 )
 
 
 # Function to invoke AWS Lambda
-def invoke_lambda_function(task_id, function_name, **context):
+def invoke_lambda_function(step_name, **context):
     
     template =  context['templates_dict']
-    event = {}
-    event['Payload'] = json.loads(template.get("Payload", '{}'))
-    additional_event = template.get("additional_payload", [])
+    event = template.get("event")
+    additional_event = template.get("additional_body", [])
+    
+    prefix = context['dag_run'].conf.get('prefix', "")
+    team = context['dag_run'].conf.get('team', "")
+    pipeline = context['dag_run'].conf.get('pipeline', "")
     
     for ae in additional_event:
-        event["Payload"]["body"].update({ "processedKeys":{ "Payload": ast.literal_eval(ae) }  })
+        event["Payload"]["body"].update({ "processedKeys":{ "Payload": ae }  })
     
     lambda_client = boto3.client('lambda')
     
     # Invoke the Lambda function
     response = lambda_client.invoke(
-        FunctionName=function_name,
+        FunctionName=f"{prefix}-{team}-{pipeline}-{step_name}-a",
         Payload=json.dumps(event),
         InvocationType='RequestResponse'
     )
+    
+    return response["Payload"].read().decode("utf-8")
 
-    return json.loads(response['Payload'].read().decode("utf-8"))
+# Step 1: Invoke Preupdate Lambda function 
+preupdate_task = PythonOperator(
+    task_id='preupdate',
+    python_callable=invoke_lambda_function,
+    op_kwargs={"step_name":"preupdate"},  
+    dag=dag,
+    provide_context=True,
+    templates_dict={"event": "{{ dag_run.conf | tojson}}" }
+)
 
-# Step 1: Invoke Lambda 1
-preupdate_task = AwsLambdaInvokeFunctionOperator(
-        task_id='preupdate',
-        function_name='sdlf-demoteam-standard-preupdate-a',
-        payload="{{ dag_run.conf | tojson}}",  # Pass context as payload
-        dag=dag
-    )
-
-# Step 2: Invoke Lambda 2
+# Step 2: Invoke Process Lambda function
 process_task = PythonOperator(
     task_id='process',
     python_callable=invoke_lambda_function,
-    op_args=['process',"sdlf-demoteam-standard-process-a"],  # Replace with your Lambda function name
+    op_kwargs={"step_name":"process"},  
     dag=dag,
     provide_context=True,
-    templates_dict={"Payload": "{{ ti.xcom_pull(task_ids='preupdate') }}" }
+    templates_dict={"event": {"Payload": "{{ ti.xcom_pull(task_ids='preupdate') }}" }}
 )
 
-# Step 3: Invoke Lambda 3
+# Step 3: Invoke Postupdate Lambda function
 postupdate_task = PythonOperator(
     task_id='postupdate',
     python_callable=invoke_lambda_function,
-    op_args=['postupdate',"sdlf-demoteam-standard-postupdate-a"],  # Replace with your Lambda function name
+    op_kwargs={"step_name":"postupdate"},  
     dag=dag,
     provide_context=True,
-    templates_dict={"Payload": "{{ ti.xcom_pull(task_ids='preupdate') }}" , "additional_payload" : [ "{{ ti.xcom_pull(task_ids='process') }}" ]    }
+    templates_dict={"event":{"Payload": "{{ ti.xcom_pull(task_ids='preupdate') }}" }, "additional_body" : [ "{{ ti.xcom_pull(task_ids='process') }}" ]    }
 )
 
 
