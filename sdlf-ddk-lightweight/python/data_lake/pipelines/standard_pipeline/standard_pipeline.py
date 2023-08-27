@@ -111,7 +111,7 @@ class StandardPipeline(BaseStack):
             environment_id=self._environment_id,
             config=SDLFLightTransformConfig(
                 team=self._team,
-                orchestation=self._orchestration,
+                orchestration=self._orchestration,
                 pipeline=self.PIPELINE_TYPE,
                 raw_bucket=self._foundations_stage.raw_bucket,
                 raw_bucket_key=self._foundations_stage.raw_bucket_key,

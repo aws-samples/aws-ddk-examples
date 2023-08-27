@@ -37,7 +37,7 @@ from constructs import Construct
 @dataclass
 class SDLFLightTransformConfig:
     team: str
-    orchestation: str
+    orchestration: str
     pipeline: str
     raw_bucket: s3.IBucket
     raw_bucket_key: kms.IKey
@@ -80,7 +80,7 @@ class SDLFLightTransform(StateMachineStage):
         )
 
         self.team = self._config.team
-        self.orchestration = self._config.orchestation
+        self.orchestration = self._config.orchestration
         self.pipeline = self._config.pipeline
 
         (
@@ -150,6 +150,7 @@ class SDLFLightTransform(StateMachineStage):
 
         state_object = self._create_state_machine(
             name=f"{self._prefix}-{self.team}-{self.pipeline}-state-machine-a",
+            state_machine_name=f"{self._prefix}-{self.team}-{self.pipeline}-state-machine-a",
             definition=(parallel_state),
             additional_role_policy_statements=[
                 iam.PolicyStatement(
@@ -308,6 +309,8 @@ class SDLFLightTransform(StateMachineStage):
                 "TEAM": self.team,
                 "PIPELINE": self.pipeline,
                 "STAGE": "StageA",
+                "orchestration": self.orchestration,
+                "prefix": self._prefix,
             },
             role=self._lambda_role,
             description=f"execute {step_name} step of light transform",
