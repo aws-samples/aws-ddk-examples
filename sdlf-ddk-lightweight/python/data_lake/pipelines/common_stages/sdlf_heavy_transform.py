@@ -77,14 +77,19 @@ class SDLFHeavyTransform(StateMachineStage):
         self._redrive_lambda = self._create_lambda_function("redrive")
         self._routing_lambda = self._create_lambda_function("routing")
 
-        # state machine steps
-        process_task = self._create_lambda_task("process", "$.body.job")
-        postupdate_task = self._create_lambda_task("postupdate", "$.statusCode")
-        error_task = self._create_lambda_task("error", None)
-        check_job_task = self._create_lambda_task("check-job", "$.body.job")
+        process_lambda = self._create_lambda_function("process")
+        postupdate_lambda = self._create_lambda_function("postupdate")
+        error_lambda = self._create_lambda_function("error")
+        check_job_lambda = self._create_lambda_function("check-job")
+       
 
         if (self.orchestration=="sfn"):
-        # build state machine
+            # state machine steps
+            process_task = self._create_lambda_task("process", "$.body.job", process_lambda)
+            postupdate_task = self._create_lambda_task("postupdate", "$.statusCode", postupdate_lambda)
+            error_task = self._create_lambda_task("error", None, error_lambda)
+            check_job_task = self._create_lambda_task("check-job", "$.body.job", check_job_lambda)
+            # build state machine
             self._build_state_machine(
                 process_task, postupdate_task, error_task, check_job_task
             )
@@ -153,6 +158,7 @@ class SDLFHeavyTransform(StateMachineStage):
 
         state_object = self._create_state_machine(
             name=f"{self._prefix}-{self.team}-{self.pipeline}-state-machine-b",
+            state_machine_name=f"{self._prefix}-{self.team}-{self.pipeline}-state-machine-b",
             definition=(parallel_state),
             additional_role_policy_statements=[
                 iam.PolicyStatement(
@@ -190,7 +196,7 @@ class SDLFHeavyTransform(StateMachineStage):
         )
 
     def _create_lambda_role(self) -> iam.IRole:
-        role = cast(
+        role = cast( 
             iam.IRole,
             iam.Role(
                 self,
@@ -308,6 +314,8 @@ class SDLFHeavyTransform(StateMachineStage):
                 "TEAM": self.team,
                 "PIPELINE": self.pipeline,
                 "STAGE": "StageB",
+                "orchestration": self.orchestration,
+                "prefix": self._prefix,
             },
             role=self._lambda_role,
             description=f"exeute {step_name} step of heavy transform.",
@@ -318,9 +326,8 @@ class SDLFHeavyTransform(StateMachineStage):
         )
 
     def _create_lambda_task(
-        self, step_name: str, result_path: Optional[str]
+        self, step_name: str, result_path: Optional[str], lambda_function: lmbda.IFunction
     ) -> tasks.LambdaInvoke:
-        lambda_function = self._create_lambda_function(step_name)
 
         lambda_task = tasks.LambdaInvoke(
             self,

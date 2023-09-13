@@ -96,7 +96,6 @@ class SDLFBaseStack(BaseStack):
             if(orchestration == "mwaa" and not self._mwaa_env):
             # creates "MWAA environment" if orchestration is enabled through MWAA
                 self._mwaa_env = self._create_mwaa_env(team, pipeline_type)
-
             # PIPELINE CREATION
             pipeline: SDLFPipeline
             pipeline_name = f"{team}-{pipeline_type}"
@@ -165,7 +164,7 @@ class SDLFBaseStack(BaseStack):
                     actions=["lambda:InvokeFunction"],
                     resources=[
                         f"arn:aws:lambda:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}"
-                        + f":function:{self._resource_prefix}-{team}-{pipeline}-*"
+                        + f":function:{self._resource_prefix}-*"
                     ],
                 ),
                 iam.PolicyStatement(
