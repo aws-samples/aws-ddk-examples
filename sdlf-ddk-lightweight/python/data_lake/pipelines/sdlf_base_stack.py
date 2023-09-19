@@ -93,7 +93,7 @@ class SDLFBaseStack(BaseStack):
             ).lower()
 
             
-            if(orchestration == "mwaa" and not self._mwaa_env):
+            if(orchestration == "mwaa") and (not self._mwaa_env or f"{self._resource_prefix}-{team}-{self._environment_id}" not in self._mwaa_env.name):
             # creates "MWAA environment" if orchestration is enabled through MWAA
                 self._mwaa_env = self._create_mwaa_env(team, pipeline_type)
             # PIPELINE CREATION
@@ -147,16 +147,16 @@ class SDLFBaseStack(BaseStack):
         # mwaaa get all configs dynamically through ddk.json
         data_lake_mwaa_env = MWAAEnvironment(
             self,
-            id=f"{self._resource_prefix}-{self._environment_id}-mwaa-environment",
-            name=f"{self._resource_prefix}-{self._environment_id}-mwaa-environment",
+            id=f"{self._resource_prefix}-{team}-{self._environment_id}-mwaa-environment",
+            name=f"{self._resource_prefix}-{team}-{self._environment_id}-mwaa-environment",
             airflow_configuration_options={'core.dag_run_conf_overrides_params':True} ,
             vpc_cidr="10.44.0.0/16 ",
             environment_class="mw1.small",
             max_workers=1,
             dag_s3_path="dags",
             dag_files=[
-                os.path.join(f"{Path(__file__).parents[1]}", "src/dags/")
-            ],  # Change this to right directory path src/
+                os.path.join(f"{Path(__file__).parents[1]}", f"src/dags/{team}")
+            ],  
 
             additional_policy_statements = [
                 iam.PolicyStatement(
