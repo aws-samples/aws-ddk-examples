@@ -13,13 +13,15 @@
 # limitations under the License.
 
 import copy
+import os
+from pathlib import Path
 from typing import Any, Dict
 
 import aws_cdk as cdk
 import aws_cdk.aws_iam as iam
 import aws_cdk.aws_lambda as lmbda
 import aws_cdk.aws_ssm as ssm
-from aws_ddk_core import BaseStack, DataPipeline,  S3EventStage, MWAATriggerDagsStage
+from aws_ddk_core import BaseStack, DataPipeline,  S3EventStage, MWAATriggerDagsStage, MWAAEnvironment
 from constructs import Construct
 
 from ...foundations import FoundationsStack
@@ -50,7 +52,6 @@ class StandardPipeline(BaseStack):
         environment_id: str,
         resource_prefix: str,
         team: str,
-        mwaa_env: Any,
         orchestration: str,
         foundations_stage: FoundationsStack,
         wrangler_layer: lmbda.ILayerVersion,
@@ -61,7 +62,7 @@ class StandardPipeline(BaseStack):
     ) -> None:
         self._team = team
         self._orchestration = orchestration
-        self._mwaa_env = mwaa_env
+        self._mwaa_env = None
         self._environment_id = environment_id
         self._resource_prefix = resource_prefix
         super().__init__(
@@ -88,6 +89,10 @@ class StandardPipeline(BaseStack):
         self._app = app
         self._org = org
         self._runtime = runtime
+
+        if(self._orchestration == "mwaa") and (not self._mwaa_env or f"{self._resource_prefix}-{self._team}-{self._environment_id}" not in self._mwaa_env.name):
+                # creates "MWAA environment" if orchestration is enabled through MWAA
+                self._mwaa_env = self._create_mwaa_env(self._team, self.PIPELINE_TYPE)
 
         self._create_sdlf_pipeline()
 
@@ -338,3 +343,51 @@ class StandardPipeline(BaseStack):
             event_pattern=base_event_pattern,
             event_targets=self._data_lake_light_transform.targets,
         )
+
+    def _create_mwaa_env(self,team,pipeline) -> None:
+        # creating MWAAEnvironment
+        data_lake_mwaa_env = MWAAEnvironment(
+            self,
+            id=f"{self._resource_prefix}-{team}-{self._environment_id}-mwaa-environment",
+            name=f"{self._resource_prefix}-{team}-{self._environment_id}-mwaa-environment",
+            airflow_configuration_options={'core.dag_run_conf_overrides_params':True} ,
+            vpc_cidr="10.44.0.0/16 ",
+            environment_class="mw1.small",
+            max_workers=1,
+            dag_s3_path="dags",
+            dag_files=[
+                os.path.join(f"{Path(__file__).parents[2]}", f"src/dags/{team}")
+            ],  
+
+            additional_policy_statements = [
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=["lambda:InvokeFunction"],
+                    resources=[
+                        f"arn:aws:lambda:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}"
+                        + f":function:{self._resource_prefix}-{team}-*"
+                    ],
+                ),
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        "logs:CreateLogStream",
+                        "logs:CreateLogGroup",
+                        "logs:PutLogEvents",
+                        "logs:GetLogEvents",
+                        "logs:GetLogRecord",
+                        "logs:GetLogGroupFields",
+                        "logs:GetQueryResults",
+                        "logs:DescribeLogGroups"
+
+                    ],
+                    resources=[
+                        f"arn:aws:logs:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}"
+                        + f":log-group:airflow-{self._resource_prefix}-*"
+                    ],
+                ),
+
+            ],
+        )
+
+        return data_lake_mwaa_env.mwaa_environment
