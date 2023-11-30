@@ -16,6 +16,7 @@
 from typing import Any, Dict
 
 import aws_cdk as cdk
+import aws_cdk.aws_iam as iam
 from aws_ddk_core import BaseStack, CICDPipelineStack, Configurator
 from constructs import Construct
 
@@ -113,8 +114,14 @@ if cicd_enabled:
             region=cicd_config.get_config_attribute("region"),
         ),
     )
-    pipeline.add_source_action(repository_name=cicd_repository_name)
-    pipeline.add_synth_action()
+    pipeline.add_source_action(repository_name=cicd_repository_name)    
+    pipeline.add_synth_action(
+            role_policy_statements=[
+                iam.PolicyStatement.from_json(
+                    {"Action": "ec2:DescribeAvailabilityZones", "Resource": "*"}
+                )
+            ]
+        )
     pipeline.build_pipeline(publish_assets_in_parallel=True)  # type:ignore
     pipeline.add_security_lint_stage()
     pipeline.add_stage(

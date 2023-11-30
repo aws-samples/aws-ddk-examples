@@ -12,14 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import json
-
 from datalake_library.commons import init_logger
 from datalake_library.configuration.resource_configs import StateMachineConfiguration
 from datalake_library.interfaces.states_interface import StatesInterface
 
 logger = init_logger(__name__)
 
+orchestration = os.environ["orchestration"]
+prefix = os.environ["prefix"]
 
 def lambda_handler(event, context):
     try:
@@ -30,8 +32,12 @@ def lambda_handler(event, context):
             state_config = StateMachineConfiguration(
                 event_body["team"], event_body["pipeline"], event_body["pipeline_stage"]
             )
+            # add dag_id to event_body
+            if orchestration == "mwaa":
+                event_body["dag_ids"] = [f"{event_body['team']}_{event_body['pipeline']}_{event_body['pipeline_stage']}" ]
+                event_body["prefix"] = prefix
             StatesInterface().run_state_machine(
-                state_config.get_stage_state_machine_arn, record["body"]
+                state_config.get_stage_state_machine_arn, event_body
             )
     except Exception as e:
         logger.error("Fatal error", exc_info=True)

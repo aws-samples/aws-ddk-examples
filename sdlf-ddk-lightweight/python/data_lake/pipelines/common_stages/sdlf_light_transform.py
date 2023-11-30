@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import os
+from pathlib import Path
 import json
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, cast
@@ -36,6 +37,7 @@ from constructs import Construct
 @dataclass
 class SDLFLightTransformConfig:
     team: str
+    orchestration: str
     pipeline: str
     raw_bucket: s3.IBucket
     raw_bucket_key: kms.IKey
@@ -78,6 +80,7 @@ class SDLFLightTransform(StateMachineStage):
         )
 
         self.team = self._config.team
+        self.orchestration = self._config.orchestration
         self.pipeline = self._config.pipeline
 
         (
@@ -98,16 +101,22 @@ class SDLFLightTransform(StateMachineStage):
 
         self._create_lambda_function("redrive")
 
-        preupdate_task = self._create_lambda_task("preupdate", None)
-        process_task = self._create_lambda_task(
-            "process", "$.Payload.body.processedKeys", memory_size=1536
-        )
-        postupdate_task = self._create_lambda_task("postupdate", "$.statusCode")
-        error_task = self._create_lambda_task("error", None)
+        preupdate_lambda = self._create_lambda_function("preupdate", memory_size=256)
+        process_lambda = self._create_lambda_function("process", memory_size=1536)
+        postupdate_lambda = self._create_lambda_function("postupdate", memory_size=256)
+        error_lambda = self._create_lambda_function("error", memory_size=256)
 
-        self._build_state_machine(
-            preupdate_task, process_task, postupdate_task, error_task
-        )
+        if (self.orchestration=="sfn"): 
+            preupdate_task = self._create_lambda_task("preupdate", None, lambda_function=preupdate_lambda)
+            process_task = self._create_lambda_task(
+                "process", "$.Payload.body.processedKeys", lambda_function=process_lambda
+            )
+            postupdate_task = self._create_lambda_task("postupdate", "$.statusCode", lambda_function=postupdate_lambda)
+            error_task = self._create_lambda_task("error", None, lambda_function=error_lambda)
+
+            self._build_state_machine(
+               preupdate_task, process_task, postupdate_task, error_task
+            )
 
     def _build_state_machine(
         self,
@@ -141,6 +150,7 @@ class SDLFLightTransform(StateMachineStage):
 
         state_object = self._create_state_machine(
             name=f"{self._prefix}-{self.team}-{self.pipeline}-state-machine-a",
+            state_machine_name=f"{self._prefix}-{self.team}-{self.pipeline}-state-machine-a",
             definition=(parallel_state),
             additional_role_policy_statements=[
                 iam.PolicyStatement(
@@ -299,6 +309,8 @@ class SDLFLightTransform(StateMachineStage):
                 "TEAM": self.team,
                 "PIPELINE": self.pipeline,
                 "STAGE": "StageA",
+                "orchestration": self.orchestration,
+                "prefix": self._prefix,
             },
             role=self._lambda_role,
             description=f"execute {step_name} step of light transform",
@@ -309,9 +321,9 @@ class SDLFLightTransform(StateMachineStage):
         )
 
     def _create_lambda_task(
-        self, step_name: str, result_path: Optional[str], memory_size: int = 256
+        self, step_name: str, result_path: Optional[str], lambda_function: lmbda.IFunction
     ) -> tasks.LambdaInvoke:
-        lambda_function = self._create_lambda_function(step_name, memory_size)
+        
 
         return tasks.LambdaInvoke(
             self,

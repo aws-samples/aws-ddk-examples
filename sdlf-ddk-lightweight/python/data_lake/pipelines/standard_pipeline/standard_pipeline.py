@@ -13,13 +13,15 @@
 # limitations under the License.
 
 import copy
+import os
+from pathlib import Path
 from typing import Any, Dict
 
 import aws_cdk as cdk
 import aws_cdk.aws_iam as iam
 import aws_cdk.aws_lambda as lmbda
 import aws_cdk.aws_ssm as ssm
-from aws_ddk_core import BaseStack, DataPipeline, S3EventStage
+from aws_ddk_core import BaseStack, DataPipeline,  S3EventStage, MWAATriggerDagsStage, MWAAEnvironment
 from constructs import Construct
 
 from ...foundations import FoundationsStack
@@ -50,6 +52,7 @@ class StandardPipeline(BaseStack):
         environment_id: str,
         resource_prefix: str,
         team: str,
+        orchestration: str,
         foundations_stage: FoundationsStack,
         wrangler_layer: lmbda.ILayerVersion,
         app: str,
@@ -58,6 +61,8 @@ class StandardPipeline(BaseStack):
         **kwargs: Any,
     ) -> None:
         self._team = team
+        self._orchestration = orchestration
+        self._mwaa_env = None
         self._environment_id = environment_id
         self._resource_prefix = resource_prefix
         super().__init__(
@@ -85,6 +90,10 @@ class StandardPipeline(BaseStack):
         self._org = org
         self._runtime = runtime
 
+        if(self._orchestration == "mwaa") and (not self._mwaa_env or f"{self._resource_prefix}-{self._team}-{self._environment_id}" not in self._mwaa_env.name):
+                # creates "MWAA environment" if orchestration is enabled through MWAA
+                self._mwaa_env = self._create_mwaa_env(self._team, self.PIPELINE_TYPE)
+
         self._create_sdlf_pipeline()
 
     def _create_sdlf_pipeline(self):
@@ -107,6 +116,7 @@ class StandardPipeline(BaseStack):
             environment_id=self._environment_id,
             config=SDLFLightTransformConfig(
                 team=self._team,
+                orchestration=self._orchestration,
                 pipeline=self.PIPELINE_TYPE,
                 raw_bucket=self._foundations_stage.raw_bucket,
                 raw_bucket_key=self._foundations_stage.raw_bucket_key,
@@ -137,6 +147,7 @@ class StandardPipeline(BaseStack):
             environment_id=self._environment_id,
             config=SDLFHeavyTransformConfig(
                 team=self._team,
+                orchestation=self._orchestration,
                 pipeline=self.PIPELINE_TYPE,
                 stage_bucket=self._foundations_stage.stage_bucket,
                 stage_bucket_key=self._foundations_stage.stage_bucket_key,
@@ -170,6 +181,35 @@ class StandardPipeline(BaseStack):
             )  # configure rule on register_dataset() call
             .add_stage(stage=data_lake_heavy_transform, skip_rule=True)
         )
+
+        if(self._orchestration == "mwaa"):
+            common_mwaa_trigger_dags_stage = MWAATriggerDagsStage(
+                self,
+                id=f"{self._resource_prefix}-{self._team}-{self.PIPELINE_TYPE}-trigger-dag-state-machine",
+                mwaa_environment_name=self._mwaa_env.name,
+                state_machine_name=f"{self._resource_prefix}-{self._team}-{self.PIPELINE_TYPE}-trigger-dag-state-machine",
+                dag_path="$.dag_ids",
+            )
+
+            self._state_machine = common_mwaa_trigger_dags_stage.state_machine
+
+            ssm.StringParameter(
+                self,
+                f"{self._resource_prefix}-{self._team}-{self.PIPELINE_TYPE}-state-machine-a-ssm",
+                parameter_name=f"/SDLF/SM/{self._team}/{self.PIPELINE_TYPE}StageASM",
+                string_value=self._state_machine.state_machine_arn,
+            )
+
+            ssm.StringParameter(
+                self,
+                f"{self._resource_prefix}-{self._team}-{self.PIPELINE_TYPE}-state-machine-b-ssm",
+                parameter_name=f"/SDLF/SM/{self._team}/{self.PIPELINE_TYPE}StageBSM",
+                string_value=self._state_machine.state_machine_arn,
+            )
+
+            self._data_lake_pipeline.add_stage(stage=common_mwaa_trigger_dags_stage, skip_rule=True)
+
+
         return data_lake_heavy_transform
 
     def _create_routing_lambda(self) -> lmbda.IFunction:
@@ -303,3 +343,51 @@ class StandardPipeline(BaseStack):
             event_pattern=base_event_pattern,
             event_targets=self._data_lake_light_transform.targets,
         )
+
+    def _create_mwaa_env(self,team,pipeline) -> None:
+        # creating MWAAEnvironment
+        data_lake_mwaa_env = MWAAEnvironment(
+            self,
+            id=f"{self._resource_prefix}-{team}-{self._environment_id}-mwaa-environment",
+            name=f"{self._resource_prefix}-{team}-{self._environment_id}-mwaa-environment",
+            airflow_configuration_options={'core.dag_run_conf_overrides_params':True} ,
+            vpc_cidr="10.44.0.0/16 ",
+            environment_class="mw1.small",
+            max_workers=1,
+            dag_s3_path="dags",
+            dag_files=[
+                os.path.join(f"{Path(__file__).parents[2]}", f"src/dags/{team}")
+            ],  
+
+            additional_policy_statements = [
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=["lambda:InvokeFunction"],
+                    resources=[
+                        f"arn:aws:lambda:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}"
+                        + f":function:{self._resource_prefix}-{team}-*"
+                    ],
+                ),
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        "logs:CreateLogStream",
+                        "logs:CreateLogGroup",
+                        "logs:PutLogEvents",
+                        "logs:GetLogEvents",
+                        "logs:GetLogRecord",
+                        "logs:GetLogGroupFields",
+                        "logs:GetQueryResults",
+                        "logs:DescribeLogGroups"
+
+                    ],
+                    resources=[
+                        f"arn:aws:logs:{cdk.Aws.REGION}:{cdk.Aws.ACCOUNT_ID}"
+                        + f":log-group:airflow-{self._resource_prefix}-*"
+                    ],
+                ),
+
+            ],
+        )
+
+        return data_lake_mwaa_env.mwaa_environment

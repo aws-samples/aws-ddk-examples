@@ -29,6 +29,8 @@ from datalake_library.interfaces.states_interface import StatesInterface
 
 logger = init_logger(__name__)
 
+orchestration = os.environ["orchestration"]
+prefix = os.environ["prefix"]
 
 def lambda_handler(event, context):
     """Checks if any items need processing and triggers state machine
@@ -92,6 +94,9 @@ def lambda_handler(event, context):
         }
         logger.info("Starting State Machine Execution")
         state_config = StateMachineConfiguration(team, pipeline, stage)
+        if orchestration == "mwaa":
+                response["dag_ids"] = [f"{team}_{pipeline}_{stage}" ]
+                response["prefix"] = prefix
         StatesInterface().run_state_machine(
             state_config.get_stage_state_machine_arn, response
         )
