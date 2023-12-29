@@ -87,7 +87,7 @@ export class FileStandardizationPipelineStack extends ddk.BaseStack {
           targets: {
             s3Targets: [
               {
-                path: `s3://${this.bucket.bucketName}/output}`
+                path: `s3://${this.bucket.bucketName}/output`
               }
             ]
           },
