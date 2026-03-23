@@ -1,5 +1,10 @@
 # AWS DDK Examples
 
+> [!WARNING]
+> **This repository has been archived and is no longer maintained.**
+> 
+> This project is no longer actively developed or supported. The repository has been made read-only for historical reference.
+
 This repository contains a list of example projects for the [AWS DataOps Development Kit (DDK)](https://awslabs.github.io/aws-ddk/).
 
 ## Table of Contents
